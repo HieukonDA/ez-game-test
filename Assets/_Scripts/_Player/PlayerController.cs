@@ -4,15 +4,21 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    // Start is called before the first frame update
+    [SerializeField] private float _maxHealth = 100f;
+    private float _currentHealth;
+
+    [SerializeField] private HealthBar _healthBar;
+
     void Start()
     {
-        
+        _currentHealth = _maxHealth;
+
+        if (_healthBar != null)
+        {
+            _healthBar.UpdateHealthBar(_currentHealth, _maxHealth);
+        }
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+    // address damage to the player
+
 }
