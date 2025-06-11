@@ -8,6 +8,7 @@ public class EnemyAI : MonoBehaviour
     [Header("Heath Settings")]
     [SerializeField] private float _maxHealth = 100f;
     private float _currentHealth;
+    public float CurrentHealth { get { return _currentHealth; } }
     [SerializeField] private HealthBar _healthBar;
 
     private ActionType _actionType;
@@ -15,7 +16,22 @@ public class EnemyAI : MonoBehaviour
 
     void Start()
     {
-        
+        _currentHealth = _maxHealth;
+        _healthBar.UpdateHealthBar(_currentHealth, _maxHealth);
+        StartCoroutine(EnemyAction());
+    }
+
+    private IEnumerator EnemyAction()
+    {
+        while (_currentHealth > 0)
+        {
+            yield return new WaitForSeconds(Random.Range(1f, 3f));
+            if (_currentHealth > 0) 
+            {
+                ActionType action = (ActionType)Random.Range(0, 4); 
+                CombatManager.Instance.SubmitAction(ActionType.None); 
+            }
+        }
     }
 
     public ActionType GenerateAction()
@@ -59,6 +75,7 @@ public class EnemyAI : MonoBehaviour
     
     public void ReceiveHit(ActionType hitType, int damage)
     {
+        if (_currentHealth <= 0) return;
         _animator.SetTrigger(hitType.ToString());
         TakeDamage(damage);
     }

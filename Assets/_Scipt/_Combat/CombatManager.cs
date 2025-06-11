@@ -26,34 +26,62 @@ public class CombatManager : MonoBehaviour
     public void SubmitAction(ActionType playerAction)
     {
         ActionType enemyAction = _enemyAI.GenerateAction();
-
-        (ActionType playerResult, ActionType enemyResult) = CombatResolve.Resolve(playerAction, enemyAction);
+        (ActionType playerResult, ActionType enemyResult) = playerAction == ActionType.None 
+            ? (ActionType.None, enemyAction) 
+            : CombatResolve.Resolve(playerAction, enemyAction);
 
         //take damage
-        int playerDamage = IsPunch(playerResult) ? 10 : 0;
-        int enemyDamage = IsPunch(enemyResult) ? 10 : 0;
+        int playerDamage = IsPunch(playerResult);
+        int enemyDamage = IsPunch(enemyResult);
 
-        if (IsHit(playerResult)) _playerController.ReceiveHit(playerResult, enemyDamage);
-        if (IsHit(enemyResult)) _enemyAI.ReceiveHit(enemyResult, playerDamage);
+        if (IsHit(playerResult))
+        {
+            _playerController.ReceiveHit(playerResult, playerDamage);
+        }
+        if (IsHit(enemyResult))
+        {
+            _enemyAI.ReceiveHit(enemyResult, enemyDamage);
+        }
 
-        //perform action
-        _playerController.PerformAction(playerResult);
+        if (playerAction != ActionType.None)
+        {
+            _playerController.PerformAction(playerResult);
+        }
         _enemyAI.PerformAction(enemyResult);
 
-        if (playerResult == ActionType.HeadHit) _enemyAI.KnockOut();
-        if (enemyResult == ActionType.HeadHit) _playerController.KnockOut();
+        if (_playerController.CurrentHealth <= 0)
+        {
+            _playerController.KnockOut();
+            EndMatch(false);
+        }
+        if (_enemyAI.CurrentHealth <= 0)
+        {
+            _enemyAI.KnockOut();
+            EndMatch(true);
+        }
     }
 
     private bool IsHit(ActionType action)
     {
-        return action == ActionType.HeadHit || action == ActionType.StomachHit || action == ActionType.KidneyHit;
+        return action == ActionType.HeadHit || action == ActionType.KidneyHit || action == ActionType.StomachHit;
+    }
+
+    private int IsPunch(ActionType action)
+    {
+        return action switch
+        {
+            ActionType.HeadHit => 10,
+            ActionType.KidneyHit => 5,
+            ActionType.StomachHit => 7,
+            _ => 0
+        };
     }
     
-    private bool IsPunch(ActionType action)
+    private void EndMatch(bool playerWon)
     {
-        return action == ActionType.HeadPunch || 
-               action == ActionType.KidneyPunchLeft || 
-               action == ActionType.KidneyPunchRight;
+        // Stop further actions
+        Time.timeScale = 0; // Pause game (replace with proper game over UI later)
+        Debug.Log(playerWon ? "Player Wins!" : "Enemy Wins!");
     }
 
     

@@ -7,4 +7,5 @@ public enum ActionType
     KidneyHit,
     HeadHit,
     StomachHit,
+    None,
 }

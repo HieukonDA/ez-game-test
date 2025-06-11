@@ -1,15 +1,12 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using UnityEngine;
-using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 public class PlayerController : MonoBehaviour
 {
     [Header("Heath Settings")]
     [SerializeField] private float _maxHealth = 100f;
     private float _currentHealth;
+    public float CurrentHealth { get { return _currentHealth; } }
     [SerializeField] private HealthBar _healthBar;
 
     [Header("joystick")]
@@ -20,18 +17,21 @@ public class PlayerController : MonoBehaviour
     [Header("animator")]
     [SerializeField] private Animator _animator;
 
+    [Header("UI Buttons")]
+    [SerializeField] private Button _headPunchButton;
+    [SerializeField] private Button _stomachPunchButton;
+    [SerializeField] private Button _kidneyPunchButton;
+
 
     void Start()
     {
         _currentHealth = _maxHealth;
+        _healthBar.UpdateHealthBar(_currentHealth, _maxHealth);
 
-        if (_healthBar != null)
-        {
-            _healthBar.UpdateHealthBar(_currentHealth, _maxHealth);
-        }
+        _headPunchButton.onClick.AddListener(() => CombatManager.Instance.SubmitAction(ActionType.HeadPunch));
+        _stomachPunchButton.onClick.AddListener(() => CombatManager.Instance.SubmitAction(ActionType.StomachPunch));
+        _kidneyPunchButton.onClick.AddListener(() => CombatManager.Instance.SubmitAction(ActionType.KidneyPunchLeft));
 
-        //set active joystick
-        _joystick.SetActive(false);
     }
 
     // address damage to the player
@@ -41,40 +41,11 @@ public class PlayerController : MonoBehaviour
         if (_currentHealth <= 0)
         {
             _currentHealth = 0;
-
         }
 
         if (_healthBar != null)
         {
             _healthBar.UpdateHealthBar(_currentHealth, _maxHealth);
-        }
-    }
-    void Update()
-    {
-        HandleTouchInput();
-    }
-
-    private void HandleTouchInput()
-    {
-        if (Input.touchCount > 0)
-        {
-            Touch touch = Input.GetTouch(0);
-            if (touch.phase == TouchPhase.Began && touch.position.x < Screen.width / 2)
-            {
-                _joystick.SetActive(true);
-                ActionType action = (ActionType)UnityEngine.Random.Range(0, 4);
-                CombatManager.Instance.SubmitAction(action);
-            }
-            else if (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled)
-            {
-                _joystick.SetActive(false);
-                moveDirection = Vector2.zero;
-            }
-        }
-        else
-        {
-            _joystick.SetActive(false);
-            moveDirection = Vector2.zero;
         }
     }
 
@@ -96,10 +67,11 @@ public class PlayerController : MonoBehaviour
                 break;
         }
     }
-    
+
     public void ReceiveHit(ActionType hitType, int damage)
     {
-        _animator.SetTrigger(hitType.ToString()); 
+        if (_currentHealth <= 0) return;
+        _animator.SetTrigger(hitType.ToString());
         TakeDamage(damage);
     }
 
@@ -107,4 +79,6 @@ public class PlayerController : MonoBehaviour
     {
         _animator.SetTrigger("KnockedOut");
     }
+
+  
 }
