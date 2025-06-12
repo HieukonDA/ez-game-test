@@ -21,7 +21,7 @@ public class MainMenu : MonoBehaviour
     private Button _onevsOneButton;
     private Button _onevsManyButton;
     private Button _manyvsManyButton;
-    private string _defaultSceneName = "Demo";
+    private string _defaultSceneName = "Mode1";
 
     private void Start()
     {

@@ -23,7 +23,7 @@ public class AudioManager : MonoBehaviour
     private SFXPlayer sfxPlayer;
     private Dictionary<string, AudioClip> soundDictionary;
     
-
+    private bool isSoundEnabled = true;
 
     private void Awake()
     {
@@ -48,8 +48,15 @@ public class AudioManager : MonoBehaviour
         }
     }
 
+    public void SetSoundEnabled(bool isEnabled)
+    {
+        isSoundEnabled = isEnabled;
+    }
+
     public void PlaySound(string soundName)
     {
+        if (!isSoundEnabled) return;
+        
         if (soundDictionary.ContainsKey(soundName))
         {
             sfxPlayer.PlaySound(soundDictionary[soundName]);
