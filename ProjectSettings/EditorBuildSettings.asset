@@ -6,6 +6,15 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/EZ Assets/Scenes/Demo.unity
+    path: Assets/EZ Assets/Scenes/MainMenu.unity
+    guid: 9e16b4c490f583a438effc0641c58ffb
+  - enabled: 1
+    path: Assets/EZ Assets/Scenes/Mode1.unity
     guid: 6178c31992de2cc49a3af756f5e885b7
+  - enabled: 1
+    path: Assets/EZ Assets/Scenes/Mode2.unity
+    guid: f840cfea56099b94eb5535ec4b58fb34
+  - enabled: 1
+    path: Assets/EZ Assets/Scenes/Mode3.unity
+    guid: 8b261e456df230148b48f4b5d12198c6
   m_configObjects: {}
