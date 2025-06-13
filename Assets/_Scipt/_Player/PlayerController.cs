@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 public class PlayerController : MonoBehaviour
@@ -22,16 +23,29 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private Button _stomachPunchButton;
     [SerializeField] private Button _kidneyPunchButton;
 
+    [Header("Player Movement")]
+    public float _movementSpeed = 1f;
+    public float _rotationSpeed = 10f;
+    public CharacterController _characterController;
+    public Vector2 _inputDirection;
+
 
     void Start()
     {
         _currentHealth = _maxHealth;
         _healthBar.UpdateHealthBar(_currentHealth, _maxHealth);
 
+        CharacterController characterController = GetComponent<CharacterController>();
+
         _headPunchButton.onClick.AddListener(() => CombatManager.Instance.SubmitAction(ActionType.HeadPunch));
         _stomachPunchButton.onClick.AddListener(() => CombatManager.Instance.SubmitAction(ActionType.StomachPunch));
         _kidneyPunchButton.onClick.AddListener(() => CombatManager.Instance.SubmitAction(ActionType.KidneyPunchLeft));
 
+    }
+
+    void Update()
+    {
+        PerformMovement();
     }
 
     // address damage to the player
@@ -47,6 +61,29 @@ public class PlayerController : MonoBehaviour
         {
             _healthBar.UpdateHealthBar(_currentHealth, _maxHealth);
         }
+    }
+
+    public void InputPlayer(InputAction.CallbackContext _context)
+    {
+
+        _inputDirection = _context.ReadValue<Vector2>();
+    }
+
+    public void PerformMovement()
+    {
+        Vector3 movement = new Vector3(_inputDirection.x, 0, _inputDirection.y);
+        movement.Normalize();
+        if (movement != Vector3.zero)
+        {
+            Quaternion targetRotation = Quaternion.LookRotation(movement);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, _rotationSpeed * Time.deltaTime);
+            // _animator.SetBool("IsMoving", true);
+        }
+        else
+        {
+            // _animator.SetBool("IsMoving", false);
+        }
+        _characterController.Move(movement * _movementSpeed * Time.deltaTime);
     }
 
     public void PerformAction(ActionType action)

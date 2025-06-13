@@ -25,6 +25,7 @@ public class CombatManager : MonoBehaviour
 
     public void SubmitAction(ActionType playerAction)
     {
+        AudioManager.Instance.PlaySound("Punch");
         ActionType enemyAction = _enemyAI.GenerateAction();
         (ActionType playerResult, ActionType enemyResult) = playerAction == ActionType.None 
             ? (ActionType.None, enemyAction) 
