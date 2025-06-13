@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
@@ -9,11 +10,6 @@ public class PlayerController : MonoBehaviour
     private float _currentHealth;
     public float CurrentHealth { get { return _currentHealth; } }
     [SerializeField] private HealthBar _healthBar;
-
-    [Header("joystick")]
-    [SerializeField] private GameObject _joystick;
-    [SerializeField] private RectTransform _joystickRectTransform;
-    private Vector2 moveDirection;
 
     [Header("animator")]
     [SerializeField] private Animator _animator;
@@ -29,6 +25,13 @@ public class PlayerController : MonoBehaviour
     public CharacterController _characterController;
     public Vector2 _inputDirection;
 
+    [Header("Player Fight")]
+    [SerializeField] private float _attackCooldown = 0.5f;
+    [SerializeField] private float _dodgeDistance = 2f;
+    [SerializeField] private float _attackRadius = 1f;
+    [SerializeField] private Transform[] _enemys ;
+    [SerializeField] private float _lastAttackTime;
+
 
     void Start()
     {
@@ -37,10 +40,9 @@ public class PlayerController : MonoBehaviour
 
         CharacterController characterController = GetComponent<CharacterController>();
 
-        _headPunchButton.onClick.AddListener(() => CombatManager.Instance.SubmitAction(ActionType.HeadPunch));
-        _stomachPunchButton.onClick.AddListener(() => CombatManager.Instance.SubmitAction(ActionType.StomachPunch));
-        _kidneyPunchButton.onClick.AddListener(() => CombatManager.Instance.SubmitAction(ActionType.KidneyPunchLeft));
-
+        _headPunchButton.onClick.AddListener(() => PerformAction(ActionType.HeadPunch));
+        _stomachPunchButton.onClick.AddListener(() => PerformAction(ActionType.StomachPunch));
+        _kidneyPunchButton.onClick.AddListener(() => PerformAction(ActionType.KidneyPunchLeft));
     }
 
     void Update()
@@ -61,6 +63,8 @@ public class PlayerController : MonoBehaviour
         {
             _healthBar.UpdateHealthBar(_currentHealth, _maxHealth);
         }
+
+        // Debug.Log($"{name} took {damage} damage, current health: {_currentHealth}");
     }
 
     public void InputPlayer(InputAction.CallbackContext _context)
@@ -77,39 +81,89 @@ public class PlayerController : MonoBehaviour
         {
             Quaternion targetRotation = Quaternion.LookRotation(movement);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, _rotationSpeed * Time.deltaTime);
-            // _animator.SetBool("IsMoving", true);
+            _animator.SetBool("Walk", true);
         }
         else
         {
-            // _animator.SetBool("IsMoving", false);
+            _animator.SetBool("Walk", false);
         }
         _characterController.Move(movement * _movementSpeed * Time.deltaTime);
     }
 
     public void PerformAction(ActionType action)
     {
+        Debug.Log($"Performing action: {action}");
+        if (Time.time - _lastAttackTime > _attackCooldown)
+        {
+            switch (action)
+            {
+                case ActionType.KidneyPunchLeft:
+                    _animator.SetTrigger("KidneyPunchLeft");
+                    break;
+                case ActionType.KidneyPunchRight:
+                    _animator.SetTrigger("KidneyPunchRight");
+                    break;
+                case ActionType.HeadPunch:
+                Debug.Log("Head Punch Triggered");
+                    _animator.SetTrigger("HeadPunch");
+                    break;
+                case ActionType.StomachPunch:
+                    _animator.SetTrigger("StomachPunch");
+                    break;
+            }
+
+            int damage = IsPunch(action);
+            _lastAttackTime = Time.time;
+
+            // perform hit into opponents
+            foreach (Transform enemy in _enemys)
+            {
+                if (Vector3.Distance(transform.position, enemy.position) <= _attackRadius)
+                {
+                    EnemyAI enemyAI = enemy.GetComponent<EnemyAI>();
+                    if (enemyAI != null)
+                    {
+                        enemyAI.StartCoroutine(enemyAI.ReceiveHit(action, damage));
+                    }
+                }
+            }
+        }
+
+        
+    }
+
+    public IEnumerator ReceiveHit(ActionType action, int damage)
+    {
+        yield return new WaitForSeconds(0.5f);
+        
         switch (action)
         {
             case ActionType.KidneyPunchLeft:
-                _animator.SetTrigger("KidneyPunchLeft");
+                _animator.SetTrigger("KidneyHit");
                 break;
             case ActionType.KidneyPunchRight:
-                _animator.SetTrigger("KidneyPunchRight");
+                _animator.SetTrigger("KidneyHit");
                 break;
             case ActionType.HeadPunch:
-                _animator.SetTrigger("HeadPunch");
+                _animator.SetTrigger("HeadHit");
                 break;
             case ActionType.StomachPunch:
-                _animator.SetTrigger("StomachPunch");
+                _animator.SetTrigger("StomachHit");
                 break;
         }
+        TakeDamage(damage);
     }
 
-    public void ReceiveHit(ActionType hitType, int damage)
+    void PerformDodgeFront()
     {
-        if (_currentHealth <= 0) return;
-        _animator.SetTrigger(hitType.ToString());
-        TakeDamage(damage);
+        if(Input.GetKeyDown(KeyCode.E))
+        {
+            _animator.Play("DodgeFrontAnimation");
+
+            Vector3 dodgeDiretion = transform.forward * _dodgeDistance;
+
+            _characterController.Move(dodgeDiretion);
+        }
     }
 
     public void KnockOut()
@@ -117,5 +171,16 @@ public class PlayerController : MonoBehaviour
         _animator.SetTrigger("KnockedOut");
     }
 
-  
+    private int IsPunch(ActionType action)
+    {
+        return action switch
+        {
+            ActionType.HeadPunch => 10,
+            ActionType.KidneyPunchLeft => 5,
+            ActionType.KidneyPunchRight => 5,
+            ActionType.StomachPunch => 7,
+            _ => 0
+        };
+    }
+
 }

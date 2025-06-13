@@ -44,10 +44,10 @@ public class CombatManager : MonoBehaviour
             _enemyAI.ReceiveHit(enemyResult, enemyDamage);
         }
 
-        if (playerAction != ActionType.None)
-        {
-            _playerController.PerformAction(playerResult);
-        }
+        // if (playerAction != ActionType.None)
+        // {
+        //     _playerController.PerformAction(playerResult);
+        // }
         _enemyAI.PerformAction(enemyResult);
 
         if (_playerController.CurrentHealth <= 0)
