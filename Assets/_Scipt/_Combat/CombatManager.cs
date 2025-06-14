@@ -2,13 +2,19 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class CombatManager : MonoBehaviour
 {
     public static CombatManager Instance { get; private set; }
 
     [SerializeField] private PlayerController _playerController;
-    [SerializeField] private EnemyAI _enemyAI;
+    [SerializeField] private EnemyAI[] _enemyAIs;
+    [SerializeField] private HUD _hud;
+    private int _totalScore = 0;
+    private int _matchScore = 0;
+    private int _highScore = 0;
+
 
     private void Awake()
     {
@@ -21,68 +27,117 @@ public class CombatManager : MonoBehaviour
         {
             Destroy(gameObject);
         }
+        LoadScore();
+        SceneManager.sceneLoaded += OnSceneLoaded;
     }
 
-    public void SubmitAction(ActionType playerAction)
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        AudioManager.Instance.PlaySound("Punch");
-        ActionType enemyAction = _enemyAI.GenerateAction();
-        (ActionType playerResult, ActionType enemyResult) = playerAction == ActionType.None 
-            ? (ActionType.None, enemyAction) 
-            : CombatResolve.Resolve(playerAction, enemyAction);
+        _matchScore = 0;
+        FindPlayerAndEnemiesAndHUD();
+    }
 
-        //take damage
-        int playerDamage = IsPunch(playerResult);
-        int enemyDamage = IsPunch(enemyResult);
-
-        if (IsHit(playerResult))
+    private void FindPlayerAndEnemiesAndHUD()
+    {
+        _playerController = FindObjectOfType<PlayerController>();
+        _enemyAIs = FindObjectsOfType<EnemyAI>();
+        _hud = FindObjectOfType<HUD>();
+        if (_hud != null && _playerController != null)
         {
-            _playerController.ReceiveHit(playerResult, playerDamage);
+            _hud.gameObject.SetActive(true);
         }
-        if (IsHit(enemyResult))
+    }
+
+    private void LoadScore()
+    {
+        _totalScore = PlayerPrefs.GetInt("TotalScore", 0);
+    }
+
+    private void SaveScore()
+    {
+        PlayerPrefs.SetInt("TotalScore", _totalScore);
+        PlayerPrefs.Save();
+    }
+
+    public void OnPlayerHitEnemy()
+    {
+        _matchScore += 10;
+        _totalScore += 10;
+        SaveScore();
+        if (_hud != null)
         {
-            _enemyAI.ReceiveHit(enemyResult, enemyDamage);
+            _hud.UpdateScoreDisplay(10, true);
         }
+    }
 
-        // if (playerAction != ActionType.None)
-        // {
-        //     _playerController.PerformAction(playerResult);
-        // }
-        _enemyAI.PerformAction(enemyResult);
+    public void OnPlayerTakeDamage()
+    {
+        _matchScore -= 10;
+        _totalScore -= 10;
+        SaveScore();
+        if (_hud != null)
+        {
+            _hud.UpdateScoreDisplay(10, false);
+        }
+    }
 
+    public void SubmitAction(string loser)
+    {
+        if (loser == "enemy")
+        {
+            OnPlayerHitEnemy();
+            CheckWinCondition();
+        }
+        else if (loser == "player")
+        {
+            OnPlayerTakeDamage();
+            CheckWinCondition();
+        }
+    }
+
+    private void CheckWinCondition()
+    {
         if (_playerController.CurrentHealth <= 0)
         {
-            _playerController.KnockOut();
             EndMatch(false);
         }
-        if (_enemyAI.CurrentHealth <= 0)
+        else if (AreAllEnemiesDefeated())
         {
-            _enemyAI.KnockOut();
             EndMatch(true);
         }
     }
 
-    private bool IsHit(ActionType action)
+    private bool AreAllEnemiesDefeated()
     {
-        return action == ActionType.HeadHit || action == ActionType.KidneyHit || action == ActionType.StomachHit;
+        foreach (var enemy in _enemyAIs)
+        {
+            if (enemy != null && enemy.CurrentHealth > 0)
+                return false;
+        }
+        return true;
     }
 
-    private int IsPunch(ActionType action)
-    {
-        return action switch
-        {
-            ActionType.HeadHit => 10,
-            ActionType.KidneyHit => 5,
-            ActionType.StomachHit => 7,
-            _ => 0
-        };
-    }
-    
     private void EndMatch(bool playerWon)
     {
-        // Stop further actions
-        Time.timeScale = 0; // Pause game (replace with proper game over UI later)
-        Debug.Log(playerWon ? "Player Wins!" : "Enemy Wins!");
+        Time.timeScale = 0;
+        _highScore = _matchScore;
+        if (playerWon)
+        {
+            _playerController.Victory();
+        }
+        _hud.ShowGameOverPanel(playerWon);
+        if (_hud != null)
+            _hud.UpdateScoreText(_highScore);
+    }
+
+    void OnEnable()
+    {
+        FindPlayerAndEnemiesAndHUD();
+    }
+
+    private void OnDestroy()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
     }
 
     

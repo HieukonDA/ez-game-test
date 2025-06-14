@@ -6,9 +6,17 @@ using UnityEngine.UI;
 public class HUD : MonoBehaviour
 {
     [SerializeField] private Text _timerText;
+    [SerializeField] private Text _scoreText;
     [SerializeField] private float _matchDuration = 60f;
     [SerializeField] private Button _settingsButton;
     [SerializeField] private GameObject _settingsPanel;
+    [SerializeField] private GameObject _GameOverPanel;
+    [SerializeField] private Text _displayScoreText;
+    private Text _gameOverText;
+    private Text _highScoreText;
+    private Button _backToMainMenuButton;
+    private Button _nextMatchButton;
+    private Button _ResetMatchButton;
     private Button _exitSettingButton;
     private Button _musicButton;
     private Button _soundButton;
@@ -17,6 +25,7 @@ public class HUD : MonoBehaviour
     private bool _isTimerRunning = false;
     private bool _isMusicOn = true;
     private bool _isSoundOn = true;
+    private int _highScore = 0;
 
     void Start()
     {
@@ -35,12 +44,30 @@ public class HUD : MonoBehaviour
         _musicButton.onClick.AddListener(OnMusic);
         _soundButton.onClick.AddListener(OnSound);
         _BackButton.onClick.AddListener(BackMainMenu);
+
+        _GameOverPanel.SetActive(false);
+        _gameOverText = _GameOverPanel.transform.Find("GameOverText").GetComponent<Text>();
+        _highScoreText = _GameOverPanel.transform.Find("HighScoreText").GetComponent<Text>();
+        _backToMainMenuButton = _GameOverPanel.transform.Find("BackToMainMenuButton").GetComponent<Button>();
+        _nextMatchButton = _GameOverPanel.transform.Find("NextMatchButton").GetComponent<Button>();
+        _ResetMatchButton = _GameOverPanel.transform.Find("ResetMatchButton").GetComponent<Button>();
+
+        _backToMainMenuButton.onClick.AddListener(BackMainMenu);
+        // _nextMatchButton.onClick.AddListener(OnNextMatchButtonClicked);
+        _ResetMatchButton.onClick.AddListener(() =>
+        {
+            AudioManager.Instance.PlaySound("ButtonClick");
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+            Time.timeScale = 1;
+        });
+        _nextMatchButton.gameObject.SetActive(false);
+
     }
 
     private void BackMainMenu()
     {
         AudioManager.Instance.PlaySound("ButtonClick");
-        SceneManager.LoadScene("MainMenu"); 
+        SceneManager.LoadScene("MainMenu");
     }
 
     private void OnSettingsButtonClicked()
@@ -111,6 +138,26 @@ public class HUD : MonoBehaviour
         }
     }
 
+    public void UpdateScoreText(int score)
+    {
+        _scoreText.text = $"Score: {score}";
+    }
+
+    public void UpdateScoreDisplay(int score, bool PlayerHit)
+    {
+        if (_displayScoreText != null)
+        {
+            if (PlayerHit)
+            {
+                _displayScoreText.text = $"+{score}";
+            }
+            else
+            {
+                _displayScoreText.text = $"-{score}";
+            }
+        }
+    }
+
     private void StartTimer()
     {
         _timeLeft = _matchDuration;
@@ -123,5 +170,14 @@ public class HUD : MonoBehaviour
         // Logic to handle what happens when the timer ends
         Debug.Log("Match time ended!");
         // You can trigger end match logic here, like showing results or ending the game
+    }
+
+    public void ShowGameOverPanel(bool playerWon)
+    {
+        _GameOverPanel.SetActive(true);
+        _gameOverText.text = playerWon ? "You Win!" : "You Lose!";
+        _highScoreText.text = $"High Score: {_highScore}";
+        _nextMatchButton.gameObject.SetActive(playerWon);
+        AudioManager.Instance.PlaySound("GameOver");
     }
 }

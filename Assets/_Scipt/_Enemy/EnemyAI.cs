@@ -35,6 +35,13 @@ public class EnemyAI : MonoBehaviour
 
         _characterController = GetComponent<CharacterController>();
         _isTakingDamage = false;
+
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if (player != null)
+        {
+            _players = new Transform[] { player.transform };
+            _playerControllers = new PlayerController[] { player.GetComponent<PlayerController>() };
+        }
     }
 
     void Update()
@@ -45,15 +52,10 @@ public class EnemyAI : MonoBehaviour
             {
                 _animator.SetBool("Walk", false);
 
-                if (Time.time - _lastAttackTime > _attackCooldown)
+                ActionType action = GenerateAction();
+                if (!_isTakingDamage)
                 {
-                    ActionType action = GenerateAction();
-                    if (!_isTakingDamage)
-                    {
-                        PerformAction(action);
-                    }
-
-                    // _playerControllers[i].StartCoroutine(_playerControllers[i].ReceiveHit(action, 10));
+                    PerformAction(action);
                 }
             }
             else
@@ -74,7 +76,7 @@ public class EnemyAI : MonoBehaviour
 
     public ActionType GenerateAction()
     {
-        return (ActionType)Random.Range(0, System.Enum.GetValues(typeof(ActionType)).Length);
+        return (ActionType)Random.Range(0, 4);
     }
 
     public void TakeDamage(float damage)
@@ -101,18 +103,22 @@ public class EnemyAI : MonoBehaviour
             {
                 case ActionType.KidneyPunchLeft:
                     _animator.SetTrigger("KidneyPunchLeft");
+                    AudioManager.Instance.PlaySound("Punch");
                     break;
                 case ActionType.KidneyPunchRight:
                     _animator.SetTrigger("KidneyPunchRight");
+                    AudioManager.Instance.PlaySound("Punch");
                     break;
                 case ActionType.HeadPunch:
                     _animator.SetTrigger("HeadPunch");
+                    AudioManager.Instance.PlaySound("Punch");
                     break;
                 case ActionType.StomachPunch:
                     _animator.SetTrigger("StomachPunch");
+                    AudioManager.Instance.PlaySound("Punch");
                     break;
             }
-
+            
             int damage = IsPunch(action);
             _lastAttackTime = Time.time;
 
@@ -136,7 +142,7 @@ public class EnemyAI : MonoBehaviour
     public IEnumerator ReceiveHit(ActionType action, int damage)
     {
         yield return new WaitForSeconds(0.5f);
-        
+
         switch (action)
         {
             case ActionType.KidneyPunchLeft:
@@ -153,6 +159,11 @@ public class EnemyAI : MonoBehaviour
                 break;
         }
         TakeDamage(damage);
+
+        if (_currentHealth <= 0)
+        {
+            KnockOut();
+        }
     }
 
     void PerformDodgeFront()
@@ -171,6 +182,7 @@ public class EnemyAI : MonoBehaviour
     {
         _animator.SetTrigger("KnockedOut");
         _currentHealth = 0;
+        CombatManager.Instance.SubmitAction("enemy");
     }
     
     private int IsPunch(ActionType action)

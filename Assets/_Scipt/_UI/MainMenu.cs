@@ -100,8 +100,9 @@ public class MainMenu : MonoBehaviour
 
     private void OnStartButtonClicked()
     {
-        AudioManager.Instance.PlaySound("ButtonClick"); 
+        AudioManager.Instance.PlaySound("ButtonClick");
         SceneManager.LoadScene(_defaultSceneName);
+        Time.timeScale = 1;
     }
 
     private void OnExitButtonClicked()

@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
@@ -43,6 +44,8 @@ public class PlayerController : MonoBehaviour
         _headPunchButton.onClick.AddListener(() => PerformAction(ActionType.HeadPunch));
         _stomachPunchButton.onClick.AddListener(() => PerformAction(ActionType.StomachPunch));
         _kidneyPunchButton.onClick.AddListener(() => PerformAction(ActionType.KidneyPunchLeft));
+
+        _enemys = GameObject.FindGameObjectsWithTag("Enemy").Select(go => go.transform).ToArray();
     }
 
     void Update()
@@ -64,12 +67,14 @@ public class PlayerController : MonoBehaviour
             _healthBar.UpdateHealthBar(_currentHealth, _maxHealth);
         }
 
-        // Debug.Log($"{name} took {damage} damage, current health: {_currentHealth}");
+        if (_currentHealth > 0)
+        {
+            CombatManager.Instance.OnPlayerTakeDamage();
+        }    
     }
 
     public void InputPlayer(InputAction.CallbackContext _context)
     {
-
         _inputDirection = _context.ReadValue<Vector2>();
     }
 
@@ -92,7 +97,7 @@ public class PlayerController : MonoBehaviour
 
     public void PerformAction(ActionType action)
     {
-        Debug.Log($"Performing action: {action}");
+        AudioManager.Instance.PlaySound("Punch");
         if (Time.time - _lastAttackTime > _attackCooldown)
         {
             switch (action)
@@ -104,7 +109,7 @@ public class PlayerController : MonoBehaviour
                     _animator.SetTrigger("KidneyPunchRight");
                     break;
                 case ActionType.HeadPunch:
-                Debug.Log("Head Punch Triggered");
+                    Debug.Log("Head Punch Triggered");
                     _animator.SetTrigger("HeadPunch");
                     break;
                 case ActionType.StomachPunch:
@@ -115,6 +120,7 @@ public class PlayerController : MonoBehaviour
             int damage = IsPunch(action);
             _lastAttackTime = Time.time;
 
+            bool hitSuccessful = false;
             // perform hit into opponents
             foreach (Transform enemy in _enemys)
             {
@@ -124,8 +130,14 @@ public class PlayerController : MonoBehaviour
                     if (enemyAI != null)
                     {
                         enemyAI.StartCoroutine(enemyAI.ReceiveHit(action, damage));
+                        hitSuccessful = true;
                     }
                 }
+            }
+
+            if (hitSuccessful)
+            {
+                CombatManager.Instance.OnPlayerHitEnemy(); 
             }
         }
 
@@ -135,7 +147,8 @@ public class PlayerController : MonoBehaviour
     public IEnumerator ReceiveHit(ActionType action, int damage)
     {
         yield return new WaitForSeconds(0.5f);
-        
+        CombatManager.Instance.OnPlayerTakeDamage();
+
         switch (action)
         {
             case ActionType.KidneyPunchLeft:
@@ -152,6 +165,11 @@ public class PlayerController : MonoBehaviour
                 break;
         }
         TakeDamage(damage);
+        
+        if (_currentHealth <= 0)
+        {
+            KnockOut();
+        }
     }
 
     void PerformDodgeFront()
@@ -169,6 +187,13 @@ public class PlayerController : MonoBehaviour
     public void KnockOut()
     {
         _animator.SetTrigger("KnockedOut");
+        _currentHealth = 0;
+        CombatManager.Instance.SubmitAction("player");
+    }
+
+    public void Victory()
+    {
+        _animator.SetTrigger("Victory");
     }
 
     private int IsPunch(ActionType action)
