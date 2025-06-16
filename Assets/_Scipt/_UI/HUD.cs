@@ -7,6 +7,7 @@ public class HUD : MonoBehaviour
 {
     [SerializeField] private Text _timerText;
     [SerializeField] private Text _scoreText;
+    [SerializeField] private Text _levelText;
     [SerializeField] private float _matchDuration = 60f;
     [SerializeField] private Button _settingsButton;
     [SerializeField] private GameObject _settingsPanel;
@@ -32,6 +33,7 @@ public class HUD : MonoBehaviour
         _timeLeft = _matchDuration;
         UpdateTimerText();
         StartTimer();
+        UpdateLevelText();
 
         _settingsPanel.SetActive(false);
         _settingsButton.onClick.AddListener(OnSettingsButtonClicked);
@@ -53,13 +55,7 @@ public class HUD : MonoBehaviour
         _ResetMatchButton = _GameOverPanel.transform.Find("ResetMatchButton").GetComponent<Button>();
 
         _backToMainMenuButton.onClick.AddListener(BackMainMenu);
-        // _nextMatchButton.onClick.AddListener(OnNextMatchButtonClicked);
-        _ResetMatchButton.onClick.AddListener(() =>
-        {
-            AudioManager.Instance.PlaySound("ButtonClick");
-            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
-            Time.timeScale = 1;
-        });
+        _ResetMatchButton.onClick.AddListener(RestartMatch);
         _nextMatchButton.gameObject.SetActive(false);
 
     }
@@ -171,13 +167,54 @@ public class HUD : MonoBehaviour
         Debug.Log("Match time ended!");
         // You can trigger end match logic here, like showing results or ending the game
     }
+    
+    private void UpdateLevelText()
+    {
+        if (_levelText != null)
+        {
+            int currentLevel = PlayerPrefs.GetInt("SelectedLevel", 0) + 1;
+            _levelText.text = $"Level: {currentLevel}";
+        }
+    }
 
     public void ShowGameOverPanel(bool playerWon)
     {
         _GameOverPanel.SetActive(true);
         _gameOverText.text = playerWon ? "You Win!" : "You Lose!";
-        _highScoreText.text = $"High Score: {_highScore}";
+        _highScoreText.text = CombatManager.Instance.highScore.ToString();
         _nextMatchButton.gameObject.SetActive(playerWon);
+        if (playerWon && EnemyManager.Instance != null)
+        {
+            _nextMatchButton.onClick.RemoveAllListeners();
+            _nextMatchButton.onClick.AddListener(() =>
+            {
+                EnemyManager.Instance.NextLevel();
+                ResetHealthPlayer();
+                UpdateLevelText();
+                _GameOverPanel.SetActive(false);
+            });
+            _ResetMatchButton.onClick.RemoveAllListeners();
+            _ResetMatchButton.onClick.AddListener(RestartMatch);
+            LevelState.Instance.UnlockNextLevel();
+        }
         AudioManager.Instance.PlaySound("GameOver");
     }
+
+    private void ResetHealthPlayer()
+    {
+        PlayerController player = FindObjectOfType<PlayerController>();
+        if (player != null)
+        {
+            player.CurrentHealth = player.MaxHealth;
+            player.healthBar.UpdateHealthBar(player.MaxHealth, player.MaxHealth);
+        }
+    }
+
+    private void RestartMatch()
+    {
+        AudioManager.Instance.PlaySound("ButtonClick");
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        UpdateLevelText();
+        Time.timeScale = 1;
+    } 
 }

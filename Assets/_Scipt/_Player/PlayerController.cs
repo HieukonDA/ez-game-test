@@ -8,9 +8,10 @@ public class PlayerController : MonoBehaviour
 {
     [Header("Heath Settings")]
     [SerializeField] private float _maxHealth = 100f;
+    public float MaxHealth { get { return _maxHealth; } }
     private float _currentHealth;
-    public float CurrentHealth { get { return _currentHealth; } }
-    [SerializeField] private HealthBar _healthBar;
+    public float CurrentHealth { get { return _currentHealth; } set { _currentHealth = value; } }
+    public HealthBar healthBar;
 
     [Header("animator")]
     [SerializeField] private Animator _animator;
@@ -37,7 +38,7 @@ public class PlayerController : MonoBehaviour
     void Start()
     {
         _currentHealth = _maxHealth;
-        _healthBar.UpdateHealthBar(_currentHealth, _maxHealth);
+        healthBar.UpdateHealthBar(_currentHealth, _maxHealth);
 
         CharacterController characterController = GetComponent<CharacterController>();
 
@@ -51,6 +52,16 @@ public class PlayerController : MonoBehaviour
     void Update()
     {
         PerformMovement();
+        UpdateEnemyArray();
+    }
+    
+    private void UpdateEnemyArray()
+    {
+        _enemys = GameObject.FindGameObjectsWithTag("Enemy").Select(go => go.transform).ToArray();
+        if (_enemys.Length == 0)
+        {
+            Debug.LogWarning("No enemies found ");
+        }
     }
 
     // address damage to the player
@@ -62,15 +73,15 @@ public class PlayerController : MonoBehaviour
             _currentHealth = 0;
         }
 
-        if (_healthBar != null)
+        if (healthBar != null)
         {
-            _healthBar.UpdateHealthBar(_currentHealth, _maxHealth);
+            healthBar.UpdateHealthBar(_currentHealth, _maxHealth);
         }
 
         if (_currentHealth > 0)
         {
             CombatManager.Instance.OnPlayerTakeDamage();
-        }    
+        }
     }
 
     public void InputPlayer(InputAction.CallbackContext _context)

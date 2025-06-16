@@ -13,7 +13,7 @@ public class CombatManager : MonoBehaviour
     [SerializeField] private HUD _hud;
     private int _totalScore = 0;
     private int _matchScore = 0;
-    private int _highScore = 0;
+    public int highScore = 0;
 
 
     private void Awake()
@@ -21,7 +21,7 @@ public class CombatManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject);
+            // DontDestroyOnLoad(gameObject);
         }
         else
         {
@@ -35,6 +35,12 @@ public class CombatManager : MonoBehaviour
     {
         _matchScore = 0;
         FindPlayerAndEnemiesAndHUD();
+    }
+
+    public void UpdateEnemies()
+    {
+        _enemyAIs = FindObjectsOfType<EnemyAI>();
+        Debug.Log($"Updated enemies count: {_enemyAIs.Length}");
     }
 
     private void FindPlayerAndEnemiesAndHUD()
@@ -120,14 +126,14 @@ public class CombatManager : MonoBehaviour
     private void EndMatch(bool playerWon)
     {
         Time.timeScale = 0;
-        _highScore = _matchScore;
+        highScore = _matchScore;
         if (playerWon)
         {
             _playerController.Victory();
         }
         _hud.ShowGameOverPanel(playerWon);
         if (_hud != null)
-            _hud.UpdateScoreText(_highScore);
+            _hud.UpdateScoreText(highScore);
     }
 
     void OnEnable()

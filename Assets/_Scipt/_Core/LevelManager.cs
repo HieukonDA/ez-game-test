@@ -18,17 +18,28 @@ public class LevelManager : MonoBehaviour
 
     public void InitializeButtons()
     {
+        EnemyManager enemyManager = FindObjectOfType<EnemyManager>();
+        int maxLevel = enemyManager != null ? enemyManager.MaxLevel : _levelButtons.Length;
+
         for (int i = 0; i < _levelButtons.Length; i++)
         {
-            int levelIndex = i;
-            _levelButtons[i].onClick.AddListener(() => LoadLevel(levelIndex + 1));
-            _levelButtons[i].GetComponent<Image>().color = Color.gray;
+            if (i < maxLevel)
+            {
+                int levelIndex = i;
+                _levelButtons[i].onClick.AddListener(() => LoadLevel(levelIndex + 1));
+                _levelButtons[i].GetComponent<Image>().color = Color.gray;
+            }
+            else
+            {
+                _levelButtons[i].gameObject.SetActive(false);
+            }
+            
         }
     }
 
     private void LoadLevel(int level)
     {
-        int unlockedLevel = PlayerPrefs.GetInt("UnlockedLevel", 1);
+        int unlockedLevel = LevelState.Instance.GetUnlockedLevel();
         if (level <= unlockedLevel)
         {
             PlayerPrefs.SetInt("SelectedLevel", level - 1);
@@ -44,29 +55,25 @@ public class LevelManager : MonoBehaviour
 
     public void UpdateButtonStates()
     {
-        int unlockedLevel = PlayerPrefs.GetInt("UnlockedLevel", 1);
+        EnemyManager enemyManager = FindObjectOfType<EnemyManager>();
+        int maxLevel = enemyManager != null ? enemyManager.MaxLevel : _levelButtons.Length;
+        int unlockedLevel = LevelState.Instance.GetUnlockedLevel();
+
         for (int i = 0; i < _levelButtons.Length; i++)
         {
-            if (i < unlockedLevel)
+            if (i < maxLevel)
             {
-                _levelButtons[i].interactable = true;
-                _levelButtons[i].GetComponent<Image>().color = Color.white;
-            }
-            else
-            {
-                _levelButtons[i].interactable = false;
-                _levelButtons[i].GetComponent<Image>().color = Color.gray;
-            }
-        }
-    }
-    
-    public void UnlockLevel()
-    {
-        int unlockedLevel = PlayerPrefs.GetInt("UnlockedLevel", 1);
-        if (unlockedLevel < _levelButtons.Length)
-        {
-            PlayerPrefs.SetInt("UnlockedLevel", unlockedLevel + 1);
-            UpdateButtonStates();
+                if (i < unlockedLevel)
+                {
+                    _levelButtons[i].interactable = true;
+                    _levelButtons[i].GetComponent<Image>().color = Color.white;
+                }
+                else
+                {
+                    _levelButtons[i].interactable = false;
+                    _levelButtons[i].GetComponent<Image>().color = Color.gray;
+                }
+            } 
         }
     }
 }
