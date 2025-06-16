@@ -1,6 +1,4 @@
-using System;
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -38,6 +36,7 @@ public class CombatManager : MonoBehaviour
         StartCoroutine(InitializeGameWithPause());
     }
 
+    // Initializes the game with a pause to show enemy information
     private IEnumerator InitializeGameWithPause()
     {
         EnemyLevelConfig config = EnemyManager.Instance.LevelConfigs[EnemyManager.Instance.CurrentLevel];
@@ -50,8 +49,8 @@ public class CombatManager : MonoBehaviour
         {
             _hud.ShowEnemyInfo(info);
         }
-        Time.timeScale = 0f; 
-        yield return new WaitForSecondsRealtime(0f); 
+        Time.timeScale = 0f;
+        yield return new WaitForSecondsRealtime(0f);
     }
 
     public void UpdateEnemies()
@@ -105,6 +104,7 @@ public class CombatManager : MonoBehaviour
         }
     }
 
+    // This method is called when the player or enemy takes an action
     public void SubmitAction(string loser)
     {
         if (loser == "enemy")
@@ -152,6 +152,7 @@ public class CombatManager : MonoBehaviour
         StartCoroutine(DelayShowGameOverPanel(playerWon));       
     }
 
+    // Delays showing the game over panel for 5 seconds
     private IEnumerator DelayShowGameOverPanel(bool playerWon)
     {
         yield return new WaitForSecondsRealtime(5f);

@@ -1,9 +1,4 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
-using UnityEngine.UI;
-using System.Linq;
-using System.Collections.Generic;
-using System;
 
 public class EnemyManager : MonoBehaviour
 {
@@ -75,7 +70,7 @@ public class EnemyManager : MonoBehaviour
     {
         SpawnEnemies();
     }
-
+    // geenerate enemy level config
     void SpawnEnemies()
     {
         EnemyLevelConfig config = _levelConfigs[_currentLevel];

@@ -1,7 +1,4 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
-using UnityEngine.UI;
-using System.Collections.Generic;
 
 [CreateAssetMenu(fileName = "EnemyLevelConfig", menuName = "ScriptableObjects/EnemyLevelConfig", order = 1)]
 public class EnemyLevelConfig : ScriptableObject

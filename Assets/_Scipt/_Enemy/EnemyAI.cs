@@ -45,6 +45,7 @@ public class EnemyAI : MonoBehaviour
         }
     }
 
+    // check ànd move to players
     void Update()
     {
         if (!_isDisabled)
@@ -101,6 +102,7 @@ public class EnemyAI : MonoBehaviour
         Debug.Log($"{name} took {damage} damage, current health: {_currentHealth}");
     }
 
+    // Perform action based on the action type
     public void PerformAction(ActionType action, Transform target)
     {
         if (!_isDisabled && Time.time - _lastAttackTime > attackCooldown)
