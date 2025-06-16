@@ -3069,13 +3069,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   sounds:
   - name: ButtonClick
-    clip: {fileID: 8300000, guid: b9ce20faa232b8a4e873a5933759270e, type: 3}
+    clip: {fileID: 8300000, guid: d1cab1be5a9d4d74d9dfd2f80b8f0338, type: 3}
   - name: MusicTheme
     clip: {fileID: 8300000, guid: 49b7321eb3403a84888d59904a70f11d, type: 3}
   - name: Punch
     clip: {fileID: 8300000, guid: 60f9884c3aef3da4982006c9c17904b3, type: 3}
   - name: GameOver
     clip: {fileID: 8300000, guid: 126d4ad9488c00d449eb0cdcda4343ad, type: 3}
+  - name: ButtonClick2
+    clip: {fileID: 8300000, guid: b9ce20faa232b8a4e873a5933759270e, type: 3}
+  - name: Victory
+    clip: {fileID: 8300000, guid: 97e1e1c1075a55a4eaa083c207ee1a4f, type: 3}
   audioSourceMusic: {fileID: 1147214671}
   audioSourceButton: {fileID: 0}
   audioSourceCoin: {fileID: 0}

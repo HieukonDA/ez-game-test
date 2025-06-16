@@ -51,7 +51,9 @@ public class EnemyAI : MonoBehaviour
         {
             for (int i = 0; i < _playerControllers.Length; i++)
             {
-                if (_players[i].gameObject.activeSelf && Vector3.Distance(transform.position, _players[i].position) <= attackRadius)
+                float distance = Vector3.Distance(transform.position, _players[i].position);
+                if (distance > 10f) return;
+                if (_players[i].gameObject.activeSelf && distance <= attackRadius)
                 {
                     _animator.SetBool("Walk", false);
 

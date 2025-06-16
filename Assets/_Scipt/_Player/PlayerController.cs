@@ -196,16 +196,13 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    void PerformDodgeFront()
+    public void ResetState()
     {
-        if(Input.GetKeyDown(KeyCode.E))
-        {
-            _animator.Play("DodgeFrontAnimation");
-
-            Vector3 dodgeDiretion = transform.forward * _dodgeDistance;
-
-            _characterController.Move(dodgeDiretion);
-        }
+        _isDisabled = false;
+        _currentHealth = _maxHealth;
+        _characterController.enabled = true;
+        healthBar.UpdateHealthBar(_currentHealth, _maxHealth);
+        Debug.Log("Player state reset");
     }
 
     public void KnockOut()

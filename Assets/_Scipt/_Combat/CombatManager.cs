@@ -35,6 +35,23 @@ public class CombatManager : MonoBehaviour
     {
         _matchScore = 0;
         FindPlayerAndEnemiesAndHUD();
+        StartCoroutine(InitializeGameWithPause());
+    }
+
+    private IEnumerator InitializeGameWithPause()
+    {
+        EnemyLevelConfig config = EnemyManager.Instance.LevelConfigs[EnemyManager.Instance.CurrentLevel];
+        string info = $"Level {config.levelNumber}\n" +
+                     $"Enemy Count: {config.enemyCount}\n" +
+                     $"Health: {config.maxHealth}\n" +
+                     $"Speed: {config.movementSpeed:F1}\n" +
+                     $"Attack Cooldown: {config.attackCooldown:F1}s\n";
+        if (_hud != null)
+        {
+            _hud.ShowEnemyInfo(info);
+        }
+        Time.timeScale = 0f; 
+        yield return new WaitForSecondsRealtime(0f); 
     }
 
     public void UpdateEnemies()
@@ -51,6 +68,7 @@ public class CombatManager : MonoBehaviour
         if (_hud != null && _playerController != null)
         {
             _hud.gameObject.SetActive(true);
+            _hud.UpdateScoreText(_totalScore);
         }
     }
 
@@ -140,8 +158,18 @@ public class CombatManager : MonoBehaviour
         if (_hud != null)
         {
             _hud.ShowGameOverPanel(playerWon);
-            _hud.UpdateScoreText(highScore);
+            _hud.UpdateScoreText(_totalScore);
         }
+    }
+
+    public void StartGame()
+    {
+        Time.timeScale = 1f;
+        if (_hud != null)
+        {
+            _hud.HideEnemyInfo();
+        }
+        Debug.Log("Game started");
     }
 
     void OnEnable()

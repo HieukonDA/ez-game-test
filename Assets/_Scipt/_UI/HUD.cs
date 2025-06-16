@@ -1,9 +1,10 @@
 using System;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-public class HUD : MonoBehaviour
+public class HUD : MonoBehaviour, IPointerDownHandler
 {
     [SerializeField] private Text _timerText;
     [SerializeField] private Text _scoreText;
@@ -13,8 +14,11 @@ public class HUD : MonoBehaviour
     [SerializeField] private GameObject _settingsPanel;
     [SerializeField] private GameObject _GameOverPanel;
     [SerializeField] private Text _displayScoreText;
+    [SerializeField] private Text _enemyInfoText;
+    [SerializeField] private GameObject _infoPanel;
     private Text _gameOverText;
     private Text _highScoreText;
+    private Text _pauseText;
     private Button _backToMainMenuButton;
     private Button _nextMatchButton;
     private Button _ResetMatchButton;
@@ -22,6 +26,7 @@ public class HUD : MonoBehaviour
     private Button _musicButton;
     private Button _soundButton;
     private Button _BackButton;
+    private Button _PauseButton;
     private float _timeLeft;
     private bool _isTimerRunning = false;
     private bool _isMusicOn = true;
@@ -41,11 +46,15 @@ public class HUD : MonoBehaviour
         _musicButton = _settingsPanel.transform.Find("MusicButton").GetComponent<Button>();
         _soundButton = _settingsPanel.transform.Find("SoundButton").GetComponent<Button>();
         _BackButton = _settingsPanel.transform.Find("BackButton").GetComponent<Button>();
+        _PauseButton = _settingsPanel.transform.Find("PauseButton").GetComponent<Button>();
+        _pauseText = _PauseButton.transform.Find("PauseText").GetComponent<Text>();
+
 
         _exitSettingButton.onClick.AddListener(ExitSettingButton);
         _musicButton.onClick.AddListener(OnMusic);
         _soundButton.onClick.AddListener(OnSound);
         _BackButton.onClick.AddListener(BackMainMenu);
+        _PauseButton.onClick.AddListener(PauseGame);
 
         _GameOverPanel.SetActive(false);
         _gameOverText = _GameOverPanel.transform.Find("GameOverText").GetComponent<Text>();
@@ -58,6 +67,22 @@ public class HUD : MonoBehaviour
         _ResetMatchButton.onClick.AddListener(RestartMatch);
         _nextMatchButton.gameObject.SetActive(false);
 
+    }
+
+    private void PauseGame()
+    {
+        if (Time.timeScale == 1)
+        {
+            Time.timeScale = 0f;
+            _PauseButton.GetComponent<Image>().color = Color.red;
+            _pauseText.text = "Resume";
+        }
+        else
+        {
+            Time.timeScale = 1f;
+            _PauseButton.GetComponent<Image>().color = Color.green;
+            _pauseText.text = "Pause";
+        }
     }
 
     private void BackMainMenu()
@@ -136,7 +161,7 @@ public class HUD : MonoBehaviour
 
     public void UpdateScoreText(int score)
     {
-        _scoreText.text = $"Score: {score}";
+        _scoreText.text = $"$ {score}";
     }
 
     public void UpdateScoreDisplay(int score, bool PlayerHit)
@@ -167,13 +192,13 @@ public class HUD : MonoBehaviour
         Debug.Log("Match time ended!");
         // You can trigger end match logic here, like showing results or ending the game
     }
-    
+
     private void UpdateLevelText()
     {
         if (_levelText != null)
         {
             int currentLevel = PlayerPrefs.GetInt("SelectedLevel", 0) + 1;
-            _levelText.text = $"Level: {currentLevel}";
+            _levelText.text = $"Level {currentLevel}";
         }
     }
 
@@ -221,5 +246,27 @@ public class HUD : MonoBehaviour
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         UpdateLevelText();
         Time.timeScale = 1;
-    } 
+    }
+
+    public void ShowEnemyInfo(string info)
+    {
+        if (_enemyInfoText != null && _infoPanel != null)
+        {
+            _enemyInfoText.text = info;
+            _infoPanel.SetActive(true);
+        }
+    }
+
+    public void HideEnemyInfo()
+    {
+        if (_infoPanel != null)
+        {
+            _infoPanel.SetActive(false);
+        }
+    }
+    
+    public void OnPointerDown(PointerEventData eventData)
+    {
+        CombatManager.Instance.StartGame();
+    }
 }

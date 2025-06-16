@@ -11,7 +11,9 @@ public class EnemyManager : MonoBehaviour
     [SerializeField] private GameObject _enemyPrefab;
     [SerializeField] private EnemyLevelConfig[] _levelConfigs;
     [SerializeField] private int _currentLevel = 0;
+    public EnemyLevelConfig[] LevelConfigs => _levelConfigs;
     public int MaxLevel => _levelConfigs.Length;
+    public int CurrentLevel => _currentLevel;
     private ObjectPool<GameObject> _enemyPool;
     private const int PoolSize = 50; 
     private Transform _poolParent;
@@ -60,7 +62,7 @@ public class EnemyManager : MonoBehaviour
             }
             else if (currentMode == ModeOption.ManyvsMany)
             {
-                _levelConfigs[i].enemyCount = Mathf.Min(2 + (i * 2), PoolSize); // Giới hạn 50
+                _levelConfigs[i].enemyCount = PoolSize; 
                 _levelConfigs[i].maxHealth = 80 + (i * 10);
                 _levelConfigs[i].movementSpeed = 1f + (i * 0.1f);
                 _levelConfigs[i].attackCooldown = Mathf.Max(2f - (i * 0.1f), 0.5f);
@@ -82,10 +84,11 @@ public class EnemyManager : MonoBehaviour
         {
             Vector3 playerPos = player.transform.position;
             ClearEnemies();
+            int enemiesToSpawn = Mathf.Min(config.enemyCount, PoolSize - _enemyPool.CountInactive);
             for (int i = 0; i < config.enemyCount; i++)
             {
-                Vector3 spawnPosition = playerPos + new Vector3(UnityEngine.Random.Range(-3f, 3f), 0, UnityEngine.Random.Range(-3f, 3f));
-                GameObject enemy = Instantiate(_enemyPrefab, spawnPosition, Quaternion.identity);
+                GameObject enemy = _enemyPool.Get();
+                enemy.transform.position = playerPos + new Vector3(UnityEngine.Random.Range(-5f, 5f), 0, UnityEngine.Random.Range(-5f, 5f));
                 EnemyAI enemyAI = enemy.GetComponent<EnemyAI>();
                 if (enemyAI != null)
                 {
@@ -107,10 +110,19 @@ public class EnemyManager : MonoBehaviour
     public void NextLevel()
     {
         Time.timeScale = 1f;
-        _currentLevel = Mathf.Min(_currentLevel + 1, _levelConfigs.Length - 1); 
+        _currentLevel = Mathf.Min(_currentLevel + 1, _levelConfigs.Length - 1);
         PlayerPrefs.SetInt("SelectedLevel", _currentLevel);
         ClearEnemies();
         SpawnEnemies();
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if (player != null)
+        {
+            PlayerController playerController = player.GetComponent<PlayerController>();
+            if (playerController != null)
+            {
+                playerController.ResetState();
+            }
+        }
     }
 
     private void ClearEnemies()
