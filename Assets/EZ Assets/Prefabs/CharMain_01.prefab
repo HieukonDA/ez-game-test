@@ -203,7 +203,6 @@ GameObject:
   - component: {fileID: 1602578504781251541}
   - component: {fileID: 4674081637985950127}
   - component: {fileID: 5521769192493349910}
-  - component: {fileID: 6578713248358673565}
   - component: {fileID: 4749688368066838016}
   - component: {fileID: 6727851028025641007}
   m_Layer: 0
@@ -265,7 +264,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _maxHealth: 100
-  _healthBar: {fileID: 4375089025218917249}
+  healthBar: {fileID: 0}
   _animator: {fileID: 4674081637985950127}
   _headPunchButton: {fileID: 0}
   _stomachPunchButton: {fileID: 0}
@@ -276,26 +275,10 @@ MonoBehaviour:
   _inputDirection: {x: 0, y: 0}
   _attackCooldown: 0.5
   _dodgeDistance: 2
-  _attackRadius: 1.2
+  _attackRadius: 0.7
   _enemys:
   - {fileID: 0}
   _lastAttackTime: 0
---- !u!114 &6578713248358673565
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2122972254015428975}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cd0a575e87d9168449b60ba95836fa9c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _approachSpeed: 2
-  _retreatDistance: 1
-  _target: {fileID: 0}
-  _combatRange: 1
 --- !u!114 &4749688368066838016
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -362,7 +345,7 @@ CharacterController:
   m_Enabled: 1
   serializedVersion: 3
   m_Height: 2
-  m_Radius: 0.5
+  m_Radius: 0.2
   m_SlopeLimit: 45
   m_StepOffset: 0.3
   m_SkinWidth: 0.08

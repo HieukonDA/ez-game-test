@@ -1578,7 +1578,7 @@ MonoBehaviour:
   _inputDirection: {x: 0, y: 0}
   attackCooldown: 0.5
   dodgeDistance: 2
-  attackRadius: 1
+  attackRadius: 0.7
   _playerControllers:
   - {fileID: 0}
   _players:
@@ -1604,7 +1604,7 @@ CharacterController:
   m_Enabled: 1
   serializedVersion: 3
   m_Height: 2
-  m_Radius: 0.5
+  m_Radius: 0.2
   m_SlopeLimit: 45
   m_StepOffset: 0.3
   m_SkinWidth: 0.08

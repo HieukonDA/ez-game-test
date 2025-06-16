@@ -12,6 +12,9 @@ public class EnemyManager : MonoBehaviour
     [SerializeField] private EnemyLevelConfig[] _levelConfigs;
     [SerializeField] private int _currentLevel = 0;
     public int MaxLevel => _levelConfigs.Length;
+    private ObjectPool<GameObject> _enemyPool;
+    private const int PoolSize = 50; 
+    private Transform _poolParent;
 
     private void Awake()
     {
@@ -23,6 +26,46 @@ public class EnemyManager : MonoBehaviour
         else
         {
             Destroy(gameObject);
+        }
+        _currentLevel = PlayerPrefs.GetInt("SelectedLevel", 0);
+        GenerateLevelConfig();
+
+        _poolParent = new GameObject("EnemyPool").transform; 
+        _enemyPool = new ObjectPool<GameObject>(() => Instantiate(_enemyPrefab, _poolParent), PoolSize, _poolParent);
+    }
+
+    public void GenerateLevelConfig()
+    {
+        _levelConfigs = new EnemyLevelConfig[10];
+        ModeOption currentMode = LevelState.Instance.GetCurrentMode();
+        for (int i = 0; i < 10; i++)
+        {
+            _levelConfigs[i] = ScriptableObject.CreateInstance<EnemyLevelConfig>();
+            _levelConfigs[i].levelNumber = i + 1;
+            if (currentMode == ModeOption.OnevsOne)
+            {
+                _levelConfigs[i].enemyCount = 1;
+                _levelConfigs[i].maxHealth = 100 + (i * 20);
+                _levelConfigs[i].movementSpeed = 1f + (i * 0.1f);
+                _levelConfigs[i].attackCooldown = Mathf.Max(2f - (i * 0.1f), 0.5f);
+                _levelConfigs[i].attackDamage = 5 + (i * 2);
+            }
+            else if (currentMode == ModeOption.OnevsMany)
+            {
+                _levelConfigs[i].enemyCount = Mathf.Clamp(2 + i, 2, 10);
+                _levelConfigs[i].maxHealth = 100;
+                _levelConfigs[i].movementSpeed = 1f;
+                _levelConfigs[i].attackCooldown = Mathf.Max(2f - (i * 0.15f), 0.5f);
+                _levelConfigs[i].attackDamage = 5;
+            }
+            else if (currentMode == ModeOption.ManyvsMany)
+            {
+                _levelConfigs[i].enemyCount = Mathf.Min(2 + (i * 2), PoolSize); // Giới hạn 50
+                _levelConfigs[i].maxHealth = 80 + (i * 10);
+                _levelConfigs[i].movementSpeed = 1f + (i * 0.1f);
+                _levelConfigs[i].attackCooldown = Mathf.Max(2f - (i * 0.1f), 0.5f);
+                _levelConfigs[i].attackDamage = 5 + (i * 1);
+            }
         }
     }
 
@@ -49,7 +92,7 @@ public class EnemyManager : MonoBehaviour
                     enemyAI.maxHealth = config.maxHealth;
                     enemyAI.movementSpeed = config.movementSpeed;
                     enemyAI.attackCooldown = config.attackCooldown;
-                    enemyAI.attackRadius = 1.5f; // Điều chỉnh nếu cần
+                    enemyAI.attackRadius = 0.7f; // Điều chỉnh nếu cần
                 }
             }
             CombatManager.Instance.UpdateEnemies();

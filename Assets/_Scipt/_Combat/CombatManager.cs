@@ -125,15 +125,23 @@ public class CombatManager : MonoBehaviour
 
     private void EndMatch(bool playerWon)
     {
-        Time.timeScale = 0;
+        Time.timeScale = 1f;
         highScore = _matchScore;
         if (playerWon)
         {
             _playerController.Victory();
         }
-        _hud.ShowGameOverPanel(playerWon);
+        StartCoroutine(DelayShowGameOverPanel(playerWon));       
+    }
+
+    private IEnumerator DelayShowGameOverPanel(bool playerWon)
+    {
+        yield return new WaitForSecondsRealtime(5f);
         if (_hud != null)
+        {
+            _hud.ShowGameOverPanel(playerWon);
             _hud.UpdateScoreText(highScore);
+        }
     }
 
     void OnEnable()

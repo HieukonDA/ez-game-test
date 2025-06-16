@@ -9,6 +9,7 @@ public class LevelState : MonoBehaviour
 {
     public static LevelState Instance { get; private set; }
     [SerializeField] private int _unlockedLevel = 1;
+    private ModeOption _currentMode = ModeOption.OnevsOne;
 
     private void Awake()
     {
@@ -34,6 +35,7 @@ public class LevelState : MonoBehaviour
             PlayerPrefs.SetInt("UnlockedLevel", _unlockedLevel);
             PlayerPrefs.Save();
         }
+        _currentMode = (ModeOption)PlayerPrefs.GetInt("CurrentMode", 0);
     }
 
     public int GetUnlockedLevel()
@@ -66,5 +68,18 @@ public class LevelState : MonoBehaviour
         _unlockedLevel = 1;
         PlayerPrefs.SetInt("UnlockedLevel", 1);
         PlayerPrefs.Save();
+    }
+
+    public void SetCurrentMode(ModeOption modeOption)
+    {
+        _currentMode = modeOption;
+        PlayerPrefs.SetInt("ModeOption", (int)modeOption);
+        PlayerPrefs.Save();
+        Debug.Log($"Mode set to {_currentMode}");
+    }
+
+    public ModeOption GetCurrentMode()
+    {
+        return _currentMode;
     }
 }

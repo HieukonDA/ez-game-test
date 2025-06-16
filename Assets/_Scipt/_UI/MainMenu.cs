@@ -3,12 +3,6 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-public enum ModeOption
-{
-    OnevsOne,
-    OnevsMany, 
-    ManyvsMany,
-}
 public class MainMenu : MonoBehaviour
 {
     [SerializeField] private Button _startButton;
@@ -57,6 +51,7 @@ public class MainMenu : MonoBehaviour
     private void OnModeSelected(ModeOption mode)
     {
         AudioManager.Instance.PlaySound("ButtonClick");
+        LevelState.Instance.SetCurrentMode(mode);
         switch (mode)
         {
             case ModeOption.OnevsOne:

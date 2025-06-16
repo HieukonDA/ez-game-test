@@ -34,6 +34,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private Transform[] _enemys ;
     [SerializeField] private float _lastAttackTime;
 
+    private bool _isDisabled = false;
 
     void Start()
     {
@@ -51,8 +52,12 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-        PerformMovement();
-        UpdateEnemyArray();
+        if (!_isDisabled)
+        {
+            PerformMovement();
+            UpdateEnemyArray();
+        }
+        
     }
     
     private void UpdateEnemyArray()
@@ -86,7 +91,14 @@ public class PlayerController : MonoBehaviour
 
     public void InputPlayer(InputAction.CallbackContext _context)
     {
-        _inputDirection = _context.ReadValue<Vector2>();
+        if (!_isDisabled) 
+        {
+            _inputDirection = _context.ReadValue<Vector2>();
+        }
+        else
+        {
+            _inputDirection = Vector2.zero; 
+        }
     }
 
     public void PerformMovement()
@@ -109,7 +121,7 @@ public class PlayerController : MonoBehaviour
     public void PerformAction(ActionType action)
     {
         AudioManager.Instance.PlaySound("Punch");
-        if (Time.time - _lastAttackTime > _attackCooldown)
+        if (!_isDisabled && Time.time - _lastAttackTime > _attackCooldown)
         {
             switch (action)
             {
@@ -176,6 +188,7 @@ public class PlayerController : MonoBehaviour
                 break;
         }
         TakeDamage(damage);
+        Debug.Log($"Player curenrt health: {_currentHealth}");
         
         if (_currentHealth <= 0)
         {
@@ -197,14 +210,40 @@ public class PlayerController : MonoBehaviour
 
     public void KnockOut()
     {
-        _animator.SetTrigger("KnockedOut");
-        _currentHealth = 0;
-        CombatManager.Instance.SubmitAction("player");
+        if (!_isDisabled)
+        {
+            _animator.SetTrigger("KnockedOut");
+            _currentHealth = 0;
+            CombatManager.Instance.SubmitAction("player");
+            Debug.Log("Player knocked out");
+            StartCoroutine(LockAfterKnockout());
+        }
+    }
+
+    private IEnumerator LockAfterKnockout()
+    {
+        yield return new WaitForSeconds(_animator.GetCurrentAnimatorStateInfo(0).length);
+        _isDisabled = true; 
+        _animator.SetBool("Walk", false); 
+        _characterController.enabled = false; 
     }
 
     public void Victory()
     {
-        _animator.SetTrigger("Victory");
+        if (!_isDisabled)
+        {
+            _animator.SetTrigger("Victory");
+            StartCoroutine(LockAfterVictory()); 
+        }
+    }
+
+    private IEnumerator LockAfterVictory()
+    {
+        yield return new WaitForSeconds(_animator.GetCurrentAnimatorStateInfo(0).length); 
+        _isDisabled = true; 
+        _animator.SetBool("Walk", false); 
+        _characterController.enabled = false; 
+        Debug.Log("Player locked after victory");
     }
 
     private int IsPunch(ActionType action)

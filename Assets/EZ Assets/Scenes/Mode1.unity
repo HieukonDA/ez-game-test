@@ -4043,6 +4043,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 7949929901953549094}
     - target: {fileID: 5521769192493349910, guid: 6e70ac2dd964f7e4798ba322509c7e7a, type: 3}
+      propertyPath: _attackRadius
+      value: 0.7
+      objectReference: {fileID: 0}
+    - target: {fileID: 5521769192493349910, guid: 6e70ac2dd964f7e4798ba322509c7e7a, type: 3}
       propertyPath: _headPunchButton
       value: 
       objectReference: {fileID: 1867364368}
@@ -4061,6 +4065,10 @@ PrefabInstance:
     - target: {fileID: 6578713248358673565, guid: 6e70ac2dd964f7e4798ba322509c7e7a, type: 3}
       propertyPath: _target
       value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 6727851028025641007, guid: 6e70ac2dd964f7e4798ba322509c7e7a, type: 3}
+      propertyPath: m_Radius
+      value: 0.2
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 6578713248358673565, guid: 6e70ac2dd964f7e4798ba322509c7e7a, type: 3}

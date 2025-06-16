@@ -179,6 +179,7 @@ public class HUD : MonoBehaviour
 
     public void ShowGameOverPanel(bool playerWon)
     {
+        Time.timeScale = 0f;
         _GameOverPanel.SetActive(true);
         _gameOverText.text = playerWon ? "You Win!" : "You Lose!";
         _highScoreText.text = CombatManager.Instance.highScore.ToString();
@@ -196,8 +197,12 @@ public class HUD : MonoBehaviour
             _ResetMatchButton.onClick.RemoveAllListeners();
             _ResetMatchButton.onClick.AddListener(RestartMatch);
             LevelState.Instance.UnlockNextLevel();
+            AudioManager.Instance.PlaySound("Victory");
         }
-        AudioManager.Instance.PlaySound("GameOver");
+        if (!playerWon)
+        {
+            AudioManager.Instance.PlaySound("GameOver");
+        }
     }
 
     private void ResetHealthPlayer()

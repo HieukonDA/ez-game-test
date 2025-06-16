@@ -27,6 +27,7 @@ public class EnemyAI : MonoBehaviour
     [SerializeField] private Transform[] _players;
     [SerializeField] private float _lastAttackTime;
     private bool _isTakingDamage;
+    private bool _isDisabled = false;
 
     void Start()
     {
@@ -46,29 +47,32 @@ public class EnemyAI : MonoBehaviour
 
     void Update()
     {
-        for (int i = 0; i < _playerControllers.Length; i++)
+        if (!_isDisabled)
         {
-            if (_players[i].gameObject.activeSelf && Vector3.Distance(transform.position, _players[i].position) <= attackRadius)
+            for (int i = 0; i < _playerControllers.Length; i++)
             {
-                _animator.SetBool("Walk", false);
-
-                ActionType action = GenerateAction();
-                if (!_isTakingDamage)
+                if (_players[i].gameObject.activeSelf && Vector3.Distance(transform.position, _players[i].position) <= attackRadius)
                 {
-                    PerformAction(action);
+                    _animator.SetBool("Walk", false);
+
+                    ActionType action = GenerateAction();
+                    if (!_isTakingDamage)
+                    {
+                        PerformAction(action, _players[i]);
+                    }
                 }
-            }
-            else
-            {
-                if (_players[i].gameObject.activeSelf)
+                else
                 {
-                    Vector3 movement = (_players[i].position - transform.position).normalized;
-                    _characterController.Move(movement * movementSpeed * Time.deltaTime);
+                    if (_players[i].gameObject.activeSelf)
+                    {
+                        Vector3 movement = (_players[i].position - transform.position).normalized;
+                        _characterController.Move(movement * movementSpeed * Time.deltaTime);
 
-                    Quaternion targetRotation = Quaternion.LookRotation(movement);
-                    transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
+                        Quaternion targetRotation = Quaternion.LookRotation(movement);
+                        transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
 
-                    _animator.SetBool("Walk", true);
+                        _animator.SetBool("Walk", true);
+                    }
                 }
             }
         }
@@ -95,39 +99,42 @@ public class EnemyAI : MonoBehaviour
         Debug.Log($"{name} took {damage} damage, current health: {_currentHealth}");
     }
 
-    public void PerformAction(ActionType action)
+    public void PerformAction(ActionType action, Transform target)
     {
-        if (Time.time - _lastAttackTime > attackCooldown)
+        if (!_isDisabled && Time.time - _lastAttackTime > attackCooldown)
         {
-            switch (action)
-            {
-                case ActionType.KidneyPunchLeft:
-                    _animator.SetTrigger("KidneyPunchLeft");
-                    AudioManager.Instance.PlaySound("Punch");
-                    break;
-                case ActionType.KidneyPunchRight:
-                    _animator.SetTrigger("KidneyPunchRight");
-                    AudioManager.Instance.PlaySound("Punch");
-                    break;
-                case ActionType.HeadPunch:
-                    _animator.SetTrigger("HeadPunch");
-                    AudioManager.Instance.PlaySound("Punch");
-                    break;
-                case ActionType.StomachPunch:
-                    _animator.SetTrigger("StomachPunch");
-                    AudioManager.Instance.PlaySound("Punch");
-                    break;
-            }
-            
-            int damage = IsPunch(action);
-            _lastAttackTime = Time.time;
+            Vector3 direction = (target.position - transform.position).normalized;
+            Quaternion targetRotation = Quaternion.LookRotation(new Vector3(direction.x, 0, direction.z));
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
 
-            // perform hit into opponents
-            foreach (Transform player in _players)
+            if (Quaternion.Angle(transform.rotation, targetRotation) < 5f)
             {
-                if (Vector3.Distance(transform.position, player.position) <= attackRadius)
+                switch (action)
                 {
-                    PlayerController playerController = player.GetComponent<PlayerController>();
+                    case ActionType.KidneyPunchLeft:
+                        _animator.SetTrigger("KidneyPunchLeft");
+                        AudioManager.Instance.PlaySound("Punch");
+                        break;
+                    case ActionType.KidneyPunchRight:
+                        _animator.SetTrigger("KidneyPunchRight");
+                        AudioManager.Instance.PlaySound("Punch");
+                        break;
+                    case ActionType.HeadPunch:
+                        _animator.SetTrigger("HeadPunch");
+                        AudioManager.Instance.PlaySound("Punch");
+                        break;
+                    case ActionType.StomachPunch:
+                        _animator.SetTrigger("StomachPunch");
+                        AudioManager.Instance.PlaySound("Punch");
+                        break;
+                }
+
+                int damage = IsPunch(action);
+                _lastAttackTime = Time.time;
+
+                if (Vector3.Distance(transform.position, target.position) <= attackRadius)
+                {
+                    PlayerController playerController = target.GetComponent<PlayerController>();
                     if (playerController != null)
                     {
                         playerController.StartCoroutine(playerController.ReceiveHit(action, damage));
@@ -180,9 +187,22 @@ public class EnemyAI : MonoBehaviour
 
     public void KnockOut()
     {
-        _animator.SetTrigger("KnockedOut");
-        _currentHealth = 0;
-        CombatManager.Instance.SubmitAction("enemy");
+        if (!_isDisabled)
+        {
+            _animator.SetTrigger("KnockedOut");
+            _currentHealth = 0;
+            CombatManager.Instance.SubmitAction("enemy");
+            Debug.Log("Player knocked out");
+            StartCoroutine(LockAfterKnockout());
+        }
+    }
+
+    private IEnumerator LockAfterKnockout()
+    {
+        yield return new WaitForSeconds(_animator.GetCurrentAnimatorStateInfo(0).length);
+        _isDisabled = true; 
+        _animator.SetBool("Walk", false); 
+        _characterController.enabled = false; 
     }
     
     private int IsPunch(ActionType action)
