@@ -18,6 +18,11 @@ public class MainMenu : MonoBehaviour
     private Button _manyvsManyButton;
     public string defaultSceneName = "Mode1";
 
+    [SerializeField] private Button _selectionPanelButton;
+    private GameObject _selectionPanel;
+
+    [SerializeField] private Button _settingPanelButton;
+    
     private void Start()
     {
         _ModeOptionPanel.SetActive(false);
@@ -44,6 +49,19 @@ public class MainMenu : MonoBehaviour
 
         _backMainMenuButton = _LevelPanel.transform.Find("BackMainMenuButton").GetComponent<Button>();
         _backMainMenuButton.onClick.AddListener(OnExitModeClicked);
+
+        // mo panel selections
+        _selectionPanel = gameObject.transform.Find("SelectionPanel").gameObject;
+        _selectionPanelButton.onClick.AddListener(() =>
+        {
+            AudioManager.Instance.PlaySound("ButtonClick");
+            _selectionPanel.SetActive(true);
+        });
+
+        // mo setting panel
+
+
+
 
     }
 
