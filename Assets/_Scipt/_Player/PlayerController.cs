@@ -31,8 +31,11 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float _attackCooldown = 0.5f;
     [SerializeField] private float _dodgeDistance = 2f;
     [SerializeField] private float _attackRadius = 1f;
-    [SerializeField] private Transform[] _enemys ;
+    [SerializeField] private Transform[] _enemys;
     [SerializeField] private float _lastAttackTime;
+
+    [Header("Player State")]
+    
 
     private bool _isDisabled = false;
 
@@ -48,6 +51,8 @@ public class PlayerController : MonoBehaviour
         _kidneyPunchButton.onClick.AddListener(() => PerformAction(ActionType.KidneyPunchLeft));
 
         _enemys = GameObject.FindGameObjectsWithTag("Enemy").Select(go => go.transform).ToArray();
+
+        StateManager.Instance.ChangeState(new IdleState(this));
     }
 
     void Update()
@@ -57,9 +62,9 @@ public class PlayerController : MonoBehaviour
             PerformMovement();
             UpdateEnemyArray();
         }
-        
+
     }
-    
+
     private void UpdateEnemyArray()
     {
         _enemys = GameObject.FindGameObjectsWithTag("Enemy").Select(go => go.transform).ToArray();
@@ -91,13 +96,13 @@ public class PlayerController : MonoBehaviour
 
     public void InputPlayer(InputAction.CallbackContext _context)
     {
-        if (!_isDisabled) 
+        if (!_isDisabled)
         {
             _inputDirection = _context.ReadValue<Vector2>();
         }
         else
         {
-            _inputDirection = Vector2.zero; 
+            _inputDirection = Vector2.zero;
         }
     }
 
@@ -160,11 +165,11 @@ public class PlayerController : MonoBehaviour
 
             if (hitSuccessful)
             {
-                CombatManager.Instance.OnPlayerHitEnemy(); 
+                CombatManager.Instance.OnPlayerHitEnemy();
             }
         }
 
-        
+
     }
 
     public IEnumerator ReceiveHit(ActionType action, int damage)
@@ -189,7 +194,7 @@ public class PlayerController : MonoBehaviour
         }
         TakeDamage(damage);
         Debug.Log($"Player curenrt health: {_currentHealth}");
-        
+
         if (_currentHealth <= 0)
         {
             KnockOut();
@@ -220,9 +225,9 @@ public class PlayerController : MonoBehaviour
     private IEnumerator LockAfterKnockout()
     {
         yield return new WaitForSeconds(_animator.GetCurrentAnimatorStateInfo(0).length);
-        _isDisabled = true; 
-        _animator.SetBool("Walk", false); 
-        _characterController.enabled = false; 
+        _isDisabled = true;
+        _animator.SetBool("Walk", false);
+        _characterController.enabled = false;
     }
 
     public void Victory()
@@ -230,16 +235,16 @@ public class PlayerController : MonoBehaviour
         if (!_isDisabled)
         {
             _animator.SetTrigger("Victory");
-            StartCoroutine(LockAfterVictory()); 
+            StartCoroutine(LockAfterVictory());
         }
     }
 
     private IEnumerator LockAfterVictory()
     {
-        yield return new WaitForSeconds(_animator.GetCurrentAnimatorStateInfo(0).length); 
-        _isDisabled = true; 
-        _animator.SetBool("Walk", false); 
-        _characterController.enabled = false; 
+        yield return new WaitForSeconds(_animator.GetCurrentAnimatorStateInfo(0).length);
+        _isDisabled = true;
+        _animator.SetBool("Walk", false);
+        _characterController.enabled = false;
         Debug.Log("Player locked after victory");
     }
 
@@ -253,6 +258,11 @@ public class PlayerController : MonoBehaviour
             ActionType.StomachPunch => 7,
             _ => 0
         };
+    }
+
+    public void Idle()
+    {
+        Debug.Log("Player is idle");
     }
 
 }

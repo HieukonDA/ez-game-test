@@ -1,0 +1,24 @@
+using UnityEngine;
+
+public class RightUpperCutState : IState
+{
+    PlayerController _playerController;
+    public RightUpperCutState(PlayerController playerController)
+    {
+        _playerController = playerController;
+    }
+    public void Enter()
+    {
+        Debug.Log("Entering Idle State");
+    }
+
+    public void Execute()
+    {
+        _playerController.Idle();
+    }
+
+    public void Exit()
+    {
+        Debug.Log("Exiting Idle State");
+    }
+}

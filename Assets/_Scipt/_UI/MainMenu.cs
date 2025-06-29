@@ -1,54 +1,23 @@
 using System;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 public class MainMenu : MonoBehaviour
 {
     [SerializeField] private Button _startButton;
-    [SerializeField] private Button _modeButton;
-    [SerializeField] private Button _aboutButton;
-    [SerializeField] private GameObject _ModeOptionPanel;
-    [SerializeField] private GameObject _AboutPanel;
-    [SerializeField] private GameObject _LevelPanel;
-    private Button _backMainMenuButton;
-    private Button _exitAboutButton;
-    private Button _exitModeButton;
-    private Button _onevsOneButton;
-    private Button _onevsManyButton;
-    private Button _manyvsManyButton;
-    public string defaultSceneName = "Mode1";
 
     [SerializeField] private Button _selectionPanelButton;
     private GameObject _selectionPanel;
-
     [SerializeField] private Button _settingPanelButton;
-    
+    private GameObject _settingPanel;
+    [SerializeField] private Button _exitButton;
+    [SerializeField] private Button _homeButton;
+    [SerializeField] private Button _mailButton;
+
+    public string defaultSceneName = "MainScene";
     private void Start()
     {
-        _ModeOptionPanel.SetActive(false);
-        _AboutPanel.SetActive(false);
-        _LevelPanel.SetActive(false);
-        // Initialize main menu buttons
-        _startButton.onClick.AddListener(OnStartButtonClicked);
-        _modeButton.onClick.AddListener(OnModeOptionClicked);
-        _aboutButton.onClick.AddListener(OnAboutClicked);
-
-        // Initialize mode option buttons
-        _exitModeButton = _ModeOptionPanel.transform.Find("ExitModeButton").GetComponent<Button>();
-        _onevsOneButton = _ModeOptionPanel.transform.Find("OnevsOneButton").GetComponent<Button>();
-        _onevsManyButton = _ModeOptionPanel.transform.Find("OnevsManyButton").GetComponent<Button>();
-        _manyvsManyButton = _ModeOptionPanel.transform.Find("ManyvsManyButton").GetComponent<Button>();
-
-        _exitModeButton.onClick.AddListener(OnExitModeClicked);
-        _onevsOneButton.onClick.AddListener(() => OnModeSelected(ModeOption.OnevsOne));
-        _onevsManyButton.onClick.AddListener(() => OnModeSelected(ModeOption.OnevsMany));
-        _manyvsManyButton.onClick.AddListener(() => OnModeSelected(ModeOption.ManyvsMany));
-
-        _exitAboutButton = _AboutPanel.transform.Find("ExitAboutButton").GetComponent<Button>();
-        _exitAboutButton.onClick.AddListener(OnExitModeClicked);
-
-        _backMainMenuButton = _LevelPanel.transform.Find("BackMainMenuButton").GetComponent<Button>();
-        _backMainMenuButton.onClick.AddListener(OnExitModeClicked);
 
         // mo panel selections
         _selectionPanel = gameObject.transform.Find("SelectionPanel").gameObject;
@@ -59,76 +28,41 @@ public class MainMenu : MonoBehaviour
         });
 
         // mo setting panel
-
-
-
-
-    }
-
-    private void OnModeSelected(ModeOption mode)
-    {
-        AudioManager.Instance.PlaySound("ButtonClick");
-        LevelState.Instance.SetCurrentMode(mode);
-        switch (mode)
+        _settingPanel = gameObject.transform.Find("SettingPanel").gameObject;
+        _settingPanelButton.onClick.AddListener(() =>
         {
-            case ModeOption.OnevsOne:
-                Debug.Log("Selected One vs One mode");
-                defaultSceneName = "Mode1"; // Change to your One vs One scene name
-                _onevsOneButton.GetComponent<Image>().color = Color.green;
-                _onevsManyButton.GetComponent<Image>().color = Color.white;
-                _manyvsManyButton.GetComponent<Image>().color = Color.white;
-                break;
-            case ModeOption.OnevsMany:
-                Debug.Log("Selected One vs Many mode");
-                defaultSceneName = "Mode2"; // Change to your One vs Many scene name
-                _onevsOneButton.GetComponent<Image>().color = Color.white;
-                _onevsManyButton.GetComponent<Image>().color = Color.green;
-                _manyvsManyButton.GetComponent<Image>().color = Color.white;
-                break;
-            case ModeOption.ManyvsMany:
-                Debug.Log("Selected Many vs Many mode");
-                defaultSceneName = "Mode3"; // Change to your Many vs Many scene name
-                _onevsOneButton.GetComponent<Image>().color = Color.white;
-                _onevsManyButton.GetComponent<Image>().color = Color.white;
-                _manyvsManyButton.GetComponent<Image>().color = Color.green;
-                break;
-            default:
-                throw new ArgumentOutOfRangeException(nameof(mode), mode, null);
-        }
-    }
+            AudioManager.Instance.PlaySound("ButtonClick");
+            _settingPanel.SetActive(true);
+            _selectionPanel.SetActive(false);
+        });
 
-    private void OnExitModeClicked()
-    {
-        AudioManager.Instance.PlaySound("ButtonClick");
-        _ModeOptionPanel.SetActive(false);
-        _AboutPanel.SetActive(false);
-        _LevelPanel.SetActive(false);
-    }
+        // Exit button
+        _exitButton.onClick.AddListener(OnExitButtonClicked);
+        // home button
+        _homeButton.onClick.AddListener(() =>
+        {
+            AudioManager.Instance.PlaySound("ButtonClick");
+            _settingPanel.SetActive(false);
+            _selectionPanel.SetActive(false);
+        });
+        //start button
+        _startButton.onClick.AddListener(OnStartButtonClicked);
 
-    private void OnAboutClicked()
-    {
-        AudioManager.Instance.PlaySound("ButtonClick");
-        _AboutPanel.SetActive(true);
-    }
 
-    private void OnModeOptionClicked()
-    {
-        AudioManager.Instance.PlaySound("ButtonClick");
-        _ModeOptionPanel.SetActive(true);
     }
 
     private void OnStartButtonClicked()
     {
         AudioManager.Instance.PlaySound("ButtonClick");
-        // SceneManager.LoadScene(_defaultSceneName);
-        _LevelPanel.SetActive(true);
+        SceneManager.LoadScene(defaultSceneName);
         Time.timeScale = 1;
     }
 
     private void OnExitButtonClicked()
     {
         AudioManager.Instance.PlaySound("ButtonClick");
-        Application.Quit();
+        _settingPanel.SetActive(false);
+        _selectionPanel.SetActive(false);
     }
 
 }
