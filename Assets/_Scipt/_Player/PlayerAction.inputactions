@@ -1,5 +1,5 @@
 {
-    "name": "Movement",
+    "name": "PlayerAction",
     "maps": [
         {
             "name": "movement",

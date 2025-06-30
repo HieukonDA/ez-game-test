@@ -14,7 +14,7 @@ public class PlayerController : MonoBehaviour
     public HealthBar healthBar;
 
     [Header("animator")]
-    [SerializeField] private Animator _animator;
+    public Animator Animator;
 
     [Header("UI Buttons")]
     [SerializeField] private Button _headPunchButton;
@@ -35,22 +35,22 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float _lastAttackTime;
 
     [Header("Player State")]
-    
+
 
     private bool _isDisabled = false;
 
     void Start()
     {
         _currentHealth = _maxHealth;
-        healthBar.UpdateHealthBar(_currentHealth, _maxHealth);
+        // healthBar.UpdateHealthBar(_currentHealth, _maxHealth);
 
         CharacterController characterController = GetComponent<CharacterController>();
 
-        _headPunchButton.onClick.AddListener(() => PerformAction(ActionType.HeadPunch));
-        _stomachPunchButton.onClick.AddListener(() => PerformAction(ActionType.StomachPunch));
-        _kidneyPunchButton.onClick.AddListener(() => PerformAction(ActionType.KidneyPunchLeft));
+        // _headPunchButton.onClick.AddListener(() => PerformAction(ActionType.HeadPunch));
+        // _stomachPunchButton.onClick.AddListener(() => PerformAction(ActionType.StomachPunch));
+        // _kidneyPunchButton.onClick.AddListener(() => PerformAction(ActionType.KidneyPunchLeft));
 
-        _enemys = GameObject.FindGameObjectsWithTag("Enemy").Select(go => go.transform).ToArray();
+        // _enemys = GameObject.FindGameObjectsWithTag("Enemy").Select(go => go.transform).ToArray();
 
         StateManager.Instance.ChangeState(new IdleState(this));
     }
@@ -90,7 +90,7 @@ public class PlayerController : MonoBehaviour
 
         if (_currentHealth > 0)
         {
-            CombatManager.Instance.OnPlayerTakeDamage();
+            // CombatManager.Instance.OnPlayerTakeDamage();
         }
     }
 
@@ -114,11 +114,11 @@ public class PlayerController : MonoBehaviour
         {
             Quaternion targetRotation = Quaternion.LookRotation(movement);
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, _rotationSpeed * Time.deltaTime);
-            _animator.SetBool("Walk", true);
+            Animator.SetBool("Walk", true);
         }
         else
         {
-            _animator.SetBool("Walk", false);
+            Animator.SetBool("Walk", false);
         }
         _characterController.Move(movement * _movementSpeed * Time.deltaTime);
     }
@@ -131,17 +131,17 @@ public class PlayerController : MonoBehaviour
             switch (action)
             {
                 case ActionType.KidneyPunchLeft:
-                    _animator.SetTrigger("KidneyPunchLeft");
+                    Animator.SetTrigger("KidneyPunchLeft");
                     break;
                 case ActionType.KidneyPunchRight:
-                    _animator.SetTrigger("KidneyPunchRight");
+                    Animator.SetTrigger("KidneyPunchRight");
                     break;
                 case ActionType.HeadPunch:
                     Debug.Log("Head Punch Triggered");
-                    _animator.SetTrigger("HeadPunch");
+                    Animator.SetTrigger("HeadPunch");
                     break;
                 case ActionType.StomachPunch:
-                    _animator.SetTrigger("StomachPunch");
+                    Animator.SetTrigger("StomachPunch");
                     break;
             }
 
@@ -165,7 +165,7 @@ public class PlayerController : MonoBehaviour
 
             if (hitSuccessful)
             {
-                CombatManager.Instance.OnPlayerHitEnemy();
+                // CombatManager.Instance.OnPlayerHitEnemy();
             }
         }
 
@@ -175,21 +175,21 @@ public class PlayerController : MonoBehaviour
     public IEnumerator ReceiveHit(ActionType action, int damage)
     {
         yield return new WaitForSeconds(0.5f);
-        CombatManager.Instance.OnPlayerTakeDamage();
+        // CombatManager.Instance.OnPlayerTakeDamage();
 
         switch (action)
         {
             case ActionType.KidneyPunchLeft:
-                _animator.SetTrigger("KidneyHit");
+                Animator.SetTrigger("KidneyHit");
                 break;
             case ActionType.KidneyPunchRight:
-                _animator.SetTrigger("KidneyHit");
+                Animator.SetTrigger("KidneyHit");
                 break;
             case ActionType.HeadPunch:
-                _animator.SetTrigger("HeadHit");
+                Animator.SetTrigger("HeadHit");
                 break;
             case ActionType.StomachPunch:
-                _animator.SetTrigger("StomachHit");
+                Animator.SetTrigger("StomachHit");
                 break;
         }
         TakeDamage(damage);
@@ -214,9 +214,9 @@ public class PlayerController : MonoBehaviour
     {
         if (!_isDisabled)
         {
-            _animator.SetTrigger("KnockedOut");
+            Animator.SetTrigger("KnockedOut");
             _currentHealth = 0;
-            CombatManager.Instance.SubmitAction("player");
+            // CombatManager.Instance.SubmitAction("player");
             Debug.Log("Player knocked out");
             StartCoroutine(LockAfterKnockout());
         }
@@ -224,26 +224,26 @@ public class PlayerController : MonoBehaviour
 
     private IEnumerator LockAfterKnockout()
     {
-        yield return new WaitForSeconds(_animator.GetCurrentAnimatorStateInfo(0).length);
+        yield return new WaitForSeconds(Animator.GetCurrentAnimatorStateInfo(0).length);
         _isDisabled = true;
-        _animator.SetBool("Walk", false);
+        Animator.SetBool("Walk", false);
         _characterController.enabled = false;
     }
 
-    public void Victory()
-    {
-        if (!_isDisabled)
-        {
-            _animator.SetTrigger("Victory");
-            StartCoroutine(LockAfterVictory());
-        }
-    }
+    // public void Victory()
+    // {
+    //     if (!_isDisabled)
+    //     {
+    //         _animator.SetTrigger("Victory");
+    //         StartCoroutine(LockAfterVictory());
+    //     }
+    // }
 
     private IEnumerator LockAfterVictory()
     {
-        yield return new WaitForSeconds(_animator.GetCurrentAnimatorStateInfo(0).length);
+        yield return new WaitForSeconds(Animator.GetCurrentAnimatorStateInfo(0).length);
         _isDisabled = true;
-        _animator.SetBool("Walk", false);
+        Animator.SetBool("Walk", false);
         _characterController.enabled = false;
         Debug.Log("Player locked after victory");
     }
@@ -263,6 +263,69 @@ public class PlayerController : MonoBehaviour
     public void Idle()
     {
         Debug.Log("Player is idle");
+        Animator.Play("Idle");
+    }
+
+    public void LeftJab()
+    {
+        Debug.Log("Player left jab");
+        Animator.Play("LeftJab");
+    }
+
+    public void RightJab()
+    {
+        Debug.Log("Player right jab");
+        Animator.Play("RightJab");
+    }
+
+    public void LeftHook()
+    {
+        Debug.Log("Player left hook");
+        Animator.Play("LeftHook");
+    }
+
+    public void RightHook()
+    {
+        Debug.Log("Player right hook");
+        Animator.Play("RightHook");
+    }
+
+    public void LeftUppercut()
+    {
+        Debug.Log("Player left uppercut");
+        Animator.Play("LeftUppercut");
+    }
+
+    public void RightUppercut()
+    {
+        Debug.Log("Player right uppercut");
+        Animator.Play("RightUppercut");
+    }
+
+    public void Block()
+    {
+        Debug.Log("Player block");
+        Animator.Play("Block");
+    }
+
+    public void Dodge()
+    {
+        Debug.Log("Player dodge");
+        Animator.Play("Dodge");
+    }
+
+    public void Victory()
+    {
+        Debug.Log("Player victory");
+        Animator.Play("Victory");
+        StartCoroutine(LockAfterVictory());
+    }
+
+    public void Defeat()
+    {
+        Debug.Log("Player defeat");
+        Animator.Play("Defeat");
+        StartCoroutine(LockAfterKnockout());
     }
 
 }

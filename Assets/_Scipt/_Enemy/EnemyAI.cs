@@ -195,7 +195,7 @@ public class EnemyAI : MonoBehaviour
         {
             _animator.SetTrigger("KnockedOut");
             _currentHealth = 0;
-            CombatManager.Instance.SubmitAction("enemy");
+            // CombatManager.Instance.SubmitAction("enemy");
             Debug.Log("Player knocked out");
             StartCoroutine(LockAfterKnockout());
         }
