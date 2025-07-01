@@ -1,24 +1,8 @@
+using Unity.VisualScripting;
 using UnityEngine;
 
-public class DefeatState : IState
+public class DefeatState : StateBase
 {
-    PlayerController _playerController;
-    public DefeatState(PlayerController playerController)
-    {
-        _playerController = playerController;
-    }
-    public void Enter()
-    {
-        Debug.Log("Entering Idle State");
-    }
-
-    public void Execute()
-    {
-        _playerController.Idle();
-    }
-
-    public void Exit()
-    {
-        Debug.Log("Exiting Idle State");
-    }
+    public DefeatState(PlayerController playerController) : base(playerController) { }
+    protected override string GetAnimationName() => "Defeat";
 }
