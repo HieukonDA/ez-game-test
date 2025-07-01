@@ -1,213 +1,83 @@
 using System.Collections;
-using System.Linq;
 using UnityEngine;
-using UnityEngine.InputSystem;
-using UnityEngine.UI;
 
 public class PlayerController : MonoBehaviour
 {
-    [Header("Heath Settings")]
+    [Header("Health Settings")]
     [SerializeField] private float _maxHealth = 100f;
-    public float MaxHealth { get { return _maxHealth; } }
+    public float MaxHealth => _maxHealth;
     private float _currentHealth;
-    public float CurrentHealth { get { return _currentHealth; } set { _currentHealth = value; } }
+    public float CurrentHealth { get => _currentHealth; set => _currentHealth = value; }
     public HealthBar healthBar;
 
-    [Header("animator")]
+    [Header("Stamina Settings")]
+    [SerializeField] private float _maxStamina = 100f;
+    private float _currentStamina;
+    [SerializeField] private float _staminaRegenRate = 10f;
+
+    [Header("Animator")]
     public Animator Animator;
 
-    [Header("UI Buttons")]
-    [SerializeField] private Button _headPunchButton;
-    [SerializeField] private Button _stomachPunchButton;
-    [SerializeField] private Button _kidneyPunchButton;
-
-    [Header("Player Movement")]
-    public float _movementSpeed = 1f;
-    public float _rotationSpeed = 10f;
-    public CharacterController _characterController;
-    public Vector2 _inputDirection;
-
-    [Header("Player Fight")]
+    [Header("Attack Settings")]
+    [SerializeField] private AttackData[] _attacks;
     [SerializeField] private float _attackCooldown = 0.5f;
-    [SerializeField] private float _dodgeDistance = 2f;
-    [SerializeField] private float _attackRadius = 1f;
-    [SerializeField] private Transform[] _enemys;
-    [SerializeField] private float _lastAttackTime;
+    private float _lastAttackTime;
+    private bool _isDisabled;
 
-    [Header("Player State")]
-
-
-    private bool _isDisabled = false;
+    private EnemyAI _enemy; // Chỉ 1 enemy vì combat tĩnh
 
     void Start()
     {
         _currentHealth = _maxHealth;
+        _currentStamina = _maxStamina;
+        _enemy = FindObjectOfType<EnemyAI>(); // Lấy enemy duy nhất
         // healthBar.UpdateHealthBar(_currentHealth, _maxHealth);
-
-        CharacterController characterController = GetComponent<CharacterController>();
-
-        // _headPunchButton.onClick.AddListener(() => PerformAction(ActionType.HeadPunch));
-        // _stomachPunchButton.onClick.AddListener(() => PerformAction(ActionType.StomachPunch));
-        // _kidneyPunchButton.onClick.AddListener(() => PerformAction(ActionType.KidneyPunchLeft));
-
-        // _enemys = GameObject.FindGameObjectsWithTag("Enemy").Select(go => go.transform).ToArray();
-
         StateManager.Instance.ChangeState(new IdleState(this));
     }
 
     void Update()
     {
         if (!_isDisabled)
-        {
-            PerformMovement();
-            UpdateEnemyArray();
-        }
-
+            _currentStamina = Mathf.Min(_currentStamina + _staminaRegenRate * Time.deltaTime, _maxStamina);
     }
 
-    private void UpdateEnemyArray()
+    public bool CanAttack(float staminaCost)
     {
-        _enemys = GameObject.FindGameObjectsWithTag("Enemy").Select(go => go.transform).ToArray();
-        if (_enemys.Length == 0)
+        return !_isDisabled && Time.time - _lastAttackTime > _attackCooldown && _currentStamina >= staminaCost;
+    }
+
+    public void PerformHit(string actionName)
+    {
+        AttackData attack = System.Array.Find(_attacks, a => a.actionName == actionName);
+        if (attack == null || !CanAttack(attack.staminaCost)) return;
+
+        _currentStamina -= attack.staminaCost;
+        _lastAttackTime = Time.time;
+        AudioManager.Instance.PlaySound("Punch");
+
+        bool hitSuccessful = _enemy.ReceiveHit(actionName, attack.damage);
+        if (hitSuccessful)
         {
-            Debug.LogWarning("No enemies found ");
+            // Trigger VFX, haptic feedback
         }
     }
 
-    // address damage to the player
+    public void ApplyComboBonus()
+    {
+        // Tăng sát thương hoặc trigger VFX đặc biệt
+    }
+
     public void TakeDamage(float damage)
     {
-        _currentHealth -= damage;
-        if (_currentHealth <= 0)
-        {
-            _currentHealth = 0;
-        }
-
-        if (healthBar != null)
-        {
-            healthBar.UpdateHealthBar(_currentHealth, _maxHealth);
-        }
-
-        if (_currentHealth > 0)
-        {
-            // CombatManager.Instance.OnPlayerTakeDamage();
-        }
-    }
-
-    public void InputPlayer(InputAction.CallbackContext _context)
-    {
-        if (!_isDisabled)
-        {
-            _inputDirection = _context.ReadValue<Vector2>();
-        }
-        else
-        {
-            _inputDirection = Vector2.zero;
-        }
-    }
-
-    public void PerformMovement()
-    {
-        Vector3 movement = new Vector3(_inputDirection.x, 0, _inputDirection.y);
-        movement.Normalize();
-        if (movement != Vector3.zero)
-        {
-            Quaternion targetRotation = Quaternion.LookRotation(movement);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, _rotationSpeed * Time.deltaTime);
-            Animator.SetBool("Walk", true);
-        }
-        else
-        {
-            Animator.SetBool("Walk", false);
-        }
-        _characterController.Move(movement * _movementSpeed * Time.deltaTime);
-    }
-
-    public void PerformAction(ActionType action)
-    {
-        AudioManager.Instance.PlaySound("Punch");
-        if (!_isDisabled && Time.time - _lastAttackTime > _attackCooldown)
-        {
-            switch (action)
-            {
-                case ActionType.KidneyPunchLeft:
-                    Animator.SetTrigger("KidneyPunchLeft");
-                    break;
-                case ActionType.KidneyPunchRight:
-                    Animator.SetTrigger("KidneyPunchRight");
-                    break;
-                case ActionType.HeadPunch:
-                    Debug.Log("Head Punch Triggered");
-                    Animator.SetTrigger("HeadPunch");
-                    break;
-                case ActionType.StomachPunch:
-                    Animator.SetTrigger("StomachPunch");
-                    break;
-            }
-
-            int damage = IsPunch(action);
-            _lastAttackTime = Time.time;
-
-            bool hitSuccessful = false;
-            // perform hit into opponents
-            foreach (Transform enemy in _enemys)
-            {
-                if (Vector3.Distance(transform.position, enemy.position) <= _attackRadius)
-                {
-                    EnemyAI enemyAI = enemy.GetComponent<EnemyAI>();
-                    if (enemyAI != null)
-                    {
-                        enemyAI.StartCoroutine(enemyAI.ReceiveHit(action, damage));
-                        hitSuccessful = true;
-                    }
-                }
-            }
-
-            if (hitSuccessful)
-            {
-                // CombatManager.Instance.OnPlayerHitEnemy();
-            }
-        }
-
-
-    }
-
-    public IEnumerator ReceiveHit(ActionType action, int damage)
-    {
-        yield return new WaitForSeconds(0.5f);
-        // CombatManager.Instance.OnPlayerTakeDamage();
-
-        switch (action)
-        {
-            case ActionType.KidneyPunchLeft:
-                Animator.SetTrigger("KidneyHit");
-                break;
-            case ActionType.KidneyPunchRight:
-                Animator.SetTrigger("KidneyHit");
-                break;
-            case ActionType.HeadPunch:
-                Animator.SetTrigger("HeadHit");
-                break;
-            case ActionType.StomachPunch:
-                Animator.SetTrigger("StomachHit");
-                break;
-        }
-        TakeDamage(damage);
-        Debug.Log($"Player curenrt health: {_currentHealth}");
-
-        if (_currentHealth <= 0)
-        {
-            KnockOut();
-        }
-    }
-
-    public void ResetState()
-    {
-        _isDisabled = false;
-        _currentHealth = _maxHealth;
-        _characterController.enabled = true;
+        _currentHealth = Mathf.Max(_currentHealth - damage, 0);
         healthBar.UpdateHealthBar(_currentHealth, _maxHealth);
-        Debug.Log("Player state reset");
+        if (_currentHealth <= 0)
+            KnockOut();
+    }
+
+    public void TriggerAnimation(string animationName)
+    {
+        Animator.SetTrigger(animationName);
     }
 
     public void KnockOut()
@@ -215,9 +85,7 @@ public class PlayerController : MonoBehaviour
         if (!_isDisabled)
         {
             Animator.SetTrigger("KnockedOut");
-            _currentHealth = 0;
-            // CombatManager.Instance.SubmitAction("player");
-            Debug.Log("Player knocked out");
+            _isDisabled = true;
             StartCoroutine(LockAfterKnockout());
         }
     }
@@ -225,107 +93,16 @@ public class PlayerController : MonoBehaviour
     private IEnumerator LockAfterKnockout()
     {
         yield return new WaitForSeconds(Animator.GetCurrentAnimatorStateInfo(0).length);
-        _isDisabled = true;
         Animator.SetBool("Walk", false);
-        _characterController.enabled = false;
     }
 
-    // public void Victory()
-    // {
-    //     if (!_isDisabled)
-    //     {
-    //         _animator.SetTrigger("Victory");
-    //         StartCoroutine(LockAfterVictory());
-    //     }
-    // }
-
-    private IEnumerator LockAfterVictory()
-    {
-        yield return new WaitForSeconds(Animator.GetCurrentAnimatorStateInfo(0).length);
-        _isDisabled = true;
-        Animator.SetBool("Walk", false);
-        _characterController.enabled = false;
-        Debug.Log("Player locked after victory");
-    }
-
-    private int IsPunch(ActionType action)
-    {
-        return action switch
-        {
-            ActionType.HeadPunch => 10,
-            ActionType.KidneyPunchLeft => 5,
-            ActionType.KidneyPunchRight => 5,
-            ActionType.StomachPunch => 7,
-            _ => 0
-        };
-    }
-
-    public void Idle()
-    {
-        Debug.Log("Player is idle");
-        Animator.Play("Idle");
-    }
-
-    public void LeftJab()
-    {
-        Debug.Log("Player left jab");
-        Animator.Play("LeftJab");
-    }
-
-    public void RightJab()
-    {
-        Debug.Log("Player right jab");
-        Animator.Play("RightJab");
-    }
-
-    public void LeftHook()
-    {
-        Debug.Log("Player left hook");
-        Animator.Play("LeftHook");
-    }
-
-    public void RightHook()
-    {
-        Debug.Log("Player right hook");
-        Animator.Play("RightHook");
-    }
-
-    public void LeftUppercut()
-    {
-        Debug.Log("Player left uppercut");
-        Animator.Play("LeftUppercut");
-    }
-
-    public void RightUppercut()
-    {
-        Debug.Log("Player right uppercut");
-        Animator.Play("RightUppercut");
-    }
-
-    public void Block()
-    {
-        Debug.Log("Player block");
-        Animator.Play("Block");
-    }
-
-    public void Dodge()
-    {
-        Debug.Log("Player dodge");
-        Animator.Play("Dodge");
-    }
-
-    public void Victory()
-    {
-        Debug.Log("Player victory");
-        Animator.Play("Victory");
-        StartCoroutine(LockAfterVictory());
-    }
-
-    public void Defeat()
-    {
-        Debug.Log("Player defeat");
-        Animator.Play("Defeat");
-        StartCoroutine(LockAfterKnockout());
-    }
-
+    public void Idle() => Animator.SetTrigger("Idle");
+    public void LeftJab() => Animator.SetTrigger("LeftJab");
+    public void RightJab() => Animator.SetTrigger("RightJab");
+    public void LeftHook() => Animator.SetTrigger("LeftHook");
+    public void RightHook() => Animator.SetTrigger("RightHook");
+    public void LeftUppercut() => Animator.SetTrigger("LeftUpperCut");
+    public void RightUppercut() => Animator.SetTrigger("RightUpperCut");
+    public void Block() => Animator.SetTrigger("Block");
+    public void Dodge() => Animator.SetTrigger("Dodge");
 }

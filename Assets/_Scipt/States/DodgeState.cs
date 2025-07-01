@@ -13,7 +13,7 @@ public class DodgeState : IState
     public void Enter()
     {
         _playerController.Dodge();
-        _duration = GetAnimationDuration("Dodge");
+        _duration = GetAnimationDuration("Dodge")*0.5f;
         _timer = 0f;
         Debug.Log("Entering Idle State");
     }

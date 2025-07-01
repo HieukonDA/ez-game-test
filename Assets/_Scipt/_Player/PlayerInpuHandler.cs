@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -8,12 +10,13 @@ public class PlayerInputHandler : MonoBehaviour
     private PlayerAction _actionHandler;
     private PlayerController _playerController;
     private Animator _animator;
-
+    private List<string> _inputQueue = new List<string>();
+    private float _lastInputTime;
+    private float _comboWindow = 0.5f;
+    private float _swipeThreshold;
+    private float _tapTimeThreshold = 0.2f;
     private Vector2 _startTouchPos, _endTouchPos;
     private float _startTouchTime;
-    private float _endTouchTime;
-    private float _tapTimeThreshold = 0.2f;
-    private float _swipeThreshold = 30f;
 
 
 
@@ -22,6 +25,7 @@ public class PlayerInputHandler : MonoBehaviour
         _actionHandler = new PlayerAction();
         _playerController = GetComponent<PlayerController>();
         _animator = this.GetComponent<Animator>();
+        _swipeThreshold = Screen.dpi * 0.1f;
     }
 
     private void OnEnable()
@@ -29,6 +33,11 @@ public class PlayerInputHandler : MonoBehaviour
         _actionHandler.Enable();
         _actionHandler.PlayerController.TouchPress.started += ctx => StartTouch();
         _actionHandler.PlayerController.TouchPress.canceled += ctx => EndTouch();
+    }
+
+    private void OnDisable()
+    {
+        _actionHandler.Disable();
     }
 
     private void StartTouch()
@@ -39,103 +48,65 @@ public class PlayerInputHandler : MonoBehaviour
 
     private void EndTouch()
     {
-        _endTouchTime = Time.time;
         _endTouchPos = _actionHandler.PlayerController.TouchPosition.ReadValue<Vector2>();
-        DetectSwipe(_endTouchPos - _startTouchPos, _endTouchTime - _startTouchTime);
+        float duration = Time.time - _startTouchTime;
+        Vector2 delta = _endTouchPos - _startTouchPos;
+        DetectSwipe(delta, duration);
     }
 
     void DetectSwipe(Vector2 delta, float duration)
     {
-        Vector2 touchPos = _actionHandler.PlayerController.TouchPosition.ReadValue<Vector2>();
+        if (Time.time - _lastInputTime > _comboWindow)
+            _inputQueue.Clear();
 
-        StateManager.Instance.ChangeState(new IdleState(_playerController));
-
-        // tap handler
+        string action = null;
         if (delta.magnitude < _swipeThreshold && duration < _tapTimeThreshold)
         {
-            if (touchPos.x < Screen.width / 2)
-            {
-                StateManager.Instance.ChangeState(new LeftJabState(_playerController));
-                Debug.Log("Vuốt trái → Đấm trái");
-            }
+            action = UnityEngine.Random.value < 0.5f ? "LeftJab" : "RightJab";
+        }
+        else if (delta.magnitude >= _swipeThreshold)
+        {
+            float angle = Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg;
+            if (angle > 45 && angle <= 135)
+                action = "Uppercut";
+            else if (angle > -135 && angle <= -45)
+                action = "Dodge";
+            else if (angle > 135 || angle <= -135)
+                action = "LeftHook";
             else
-            {
-                StateManager.Instance.ChangeState(new RightJabState(_playerController));
-                Debug.Log("Vuốt phải → Đấm phải");
-            }
-            return;
+                action = "RightHook";
         }
 
-
-        // swipe handler
-
-        float x = delta.x;
-        float y = delta.y;
-
-        if (Mathf.Abs(x) > Mathf.Abs(y))
+        if (action != null)
         {
-            if (x > 0)
-            {
-                if (touchPos.x > Screen.width / 2)
-                {
-                    StateManager.Instance.ChangeState(new RightHookState(_playerController));
-                    Debug.Log("Vuốt phải → Đấm phải");
-                }
-                else
-                {
-                    StateManager.Instance.ChangeState(new LeftHookState(_playerController));
-                    Debug.Log("Vuốt trái → Đấm trái");
-                }
-            }
-            else
-            {
-                if (touchPos.x < Screen.width / 2)
-                {
-                    StateManager.Instance.ChangeState(new LeftHookState(_playerController));
-                    Debug.Log("Vuốt trái → Đấm trái");
-                }
-                else
-                {
-                    StateManager.Instance.ChangeState(new RightHookState(_playerController));
-                    Debug.Log("Vuốt phải → Đấm phải");
-                }
-            }
-        }
-        else
-        {
-            if (y > 0)
-            {
-                if (touchPos.x < Screen.width / 2)
-                {
-                    StateManager.Instance.ChangeState(new LeftUpperCutState(_playerController));
-                    Debug.Log("Vuốt lên → muc");
-                }
-                else
-                {
-                    StateManager.Instance.ChangeState(new RightUpperCutState(_playerController));
-                    Debug.Log("Vuốt xuống → Né");
-                }
-            }
-            else
-            {
-                StateManager.Instance.ChangeState(new DodgeState(_playerController));
-            }
+            _inputQueue.Add(action);
+            _lastInputTime = Time.time;
+            StateManager.Instance.ChangeState(GetStateFromAction(action));
+            CheckCombo();
         }
     }
 
-    private float GetAnimationDuration(string clipName)
+    private void CheckCombo()
     {
-        RuntimeAnimatorController controller = _animator.runtimeAnimatorController;
-
-        foreach (var clip in controller.animationClips)
+        if (_inputQueue.Count >= 3 && _inputQueue.GetRange(_inputQueue.Count - 3, 3).SequenceEqual(new[] { "LeftJab", "RightHook", "Uppercut" }))
         {
-            if (clip.name == clipName)
-            {
-                return clip.length;
-            }
+            Debug.Log("Combo Activated!");
+            _playerController.ApplyComboBonus();
+            _inputQueue.Clear();
         }
+    }
 
-        Debug.LogWarning($"Animation {clipName} not found!");
-        return 0.5f; // fallback
+    private IState GetStateFromAction(string action)
+    {
+        switch (action)
+        {
+            case "LeftJab": return new LeftJabState(_playerController);
+            case "RightJab": return new RightJabState(_playerController);
+            case "LeftHook": return new LeftHookState(_playerController);
+            case "RightHook": return new RightHookState(_playerController);
+            case "Uppercut": return new LeftUpperCutState(_playerController);
+            case "Dodge": return new DodgeState(_playerController);
+            default: return new IdleState(_playerController);
+        }
     }
 }
