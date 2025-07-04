@@ -9,6 +9,7 @@ public class EnemyAI : MonoBehaviour, ICombatant
     private Animator _animator;
     [SerializeField] private float _maxHealth = 100f;
     private float _currentHealth;
+    public float CurrentHealth { get => _currentHealth; set => _currentHealth = value; }
     [SerializeField] private AttackData[] _attacks;
     [SerializeField] private float _actionCooldown = 1f;
     [SerializeField] private float _initialDelay = 2f;

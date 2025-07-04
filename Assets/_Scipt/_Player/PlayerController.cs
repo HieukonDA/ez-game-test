@@ -17,7 +17,7 @@ public class PlayerController : MonoBehaviour, ICombatant
     [SerializeField] private float _maxStamina = 100f;
     private float _currentStamina;
     [SerializeField] private float _staminaRegenRate = 10f;
-
+    [Header("Damage Numbers")]
     [Header("Animator")]
     public Animator Animator;
 
@@ -90,6 +90,13 @@ public class PlayerController : MonoBehaviour, ICombatant
         bool hitSuccessful = _enemy.ReceiveHit(actionName, attack.damage);
         if (hitSuccessful && _hitEffect != null)
             _hitEffect.Play();
+
+        if (hitSuccessful)
+        {
+            Vector3 enemyPos = _enemy.healthBar.transform.position + new Vector3(150, -50, 0);
+            FindObjectOfType<DamageNumber>().SpawnDamageNumber(enemyPos, attack.damage, false);
+        }
+
         _currentAction = null;
     }
 
@@ -123,6 +130,10 @@ public class PlayerController : MonoBehaviour, ICombatant
             _hitEffect.Play();
         if (healthBar != null)
             healthBar.UpdateHealthBar(_currentHealth, _maxHealth);
+
+        Vector3 pos = healthBar.transform.position + new Vector3(-150, -50, 0);
+        FindObjectOfType<DamageNumber>().SpawnDamageNumber(pos, damage, true);
+
         if (_currentHealth <= 0)
             KnockOut();
         Debug.Log($"Player received hit with action {actionName}, current health: {_currentHealth}.");
