@@ -15,7 +15,7 @@ public class HealthBar : MonoBehaviour
 
     void Update()
     {
-        transform.rotation = Quaternion.LookRotation(transform.position - _camera.transform.position);
+        // transform.rotation = Quaternion.LookRotation(transform.position - _camera.transform.position);
         if (Mathf.Abs(_healthBarImage.fillAmount - _target) > 0.01f)
         {
             _healthBarImage.fillAmount = Mathf.Lerp(_healthBarImage.fillAmount, _target, Time.deltaTime * _reduceSpeed);

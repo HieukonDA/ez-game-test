@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -12,30 +11,40 @@ public class PlayerInputHandler : MonoBehaviour
     private Animator _animator;
     private List<string> _inputQueue = new List<string>();
     private float _lastInputTime;
-    private float _comboWindow = 0.5f;
-    private float _swipeThreshold;
-    private float _tapTimeThreshold = 0.2f;
+    [SerializeField] private float _comboWindow = 0.5f;
+    [SerializeField] private float _swipeThreshold = 0.1f;
+    [SerializeField] private float _tapTimeThreshold = 0.2f;
+    [SerializeField] private ComboData[] _combos; // Assign in Inspector
     private Vector2 _startTouchPos, _endTouchPos;
     private float _startTouchTime;
 
-
-
-    private void Awake()
+    void Awake()
     {
         _actionHandler = new PlayerAction();
         _playerController = GetComponent<PlayerController>();
-        _animator = this.GetComponent<Animator>();
-        _swipeThreshold = Screen.dpi * 0.1f;
+        if (_playerController == null)
+            Debug.LogError("PlayerController not found on this GameObject!");
+        _animator = GetComponent<Animator>();
+        if (_animator == null)
+            Debug.LogError("Animator not found on this GameObject!");
+        _swipeThreshold = Screen.dpi * _swipeThreshold;
     }
 
-    private void OnEnable()
+    void OnEnable()
     {
+        if (_actionHandler == null)
+        {
+            Debug.LogError("_actionHandler is null! Ensure PlayerAction asset is configured.");
+            return;
+        }
         _actionHandler.Enable();
         _actionHandler.PlayerController.TouchPress.started += ctx => StartTouch();
         _actionHandler.PlayerController.TouchPress.canceled += ctx => EndTouch();
+
+        Debug.Log("PlayerInputHandler enabled and actions bound.");
     }
 
-    private void OnDisable()
+    void OnDisable()
     {
         _actionHandler.Disable();
     }
@@ -54,21 +63,28 @@ public class PlayerInputHandler : MonoBehaviour
         DetectSwipe(delta, duration);
     }
 
-    void DetectSwipe(Vector2 delta, float duration)
+    private void DetectSwipe(Vector2 delta, float duration)
     {
+        if (_playerController == null) return;
+
         if (Time.time - _lastInputTime > _comboWindow)
             _inputQueue.Clear();
 
         string action = null;
         if (delta.magnitude < _swipeThreshold && duration < _tapTimeThreshold)
         {
-            action = UnityEngine.Random.value < 0.5f ? "LeftJab" : "RightJab";
+            action = Random.value < 0.5f ? "LeftJab" : "RightJab";
         }
         else if (delta.magnitude >= _swipeThreshold)
         {
             float angle = Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg;
             if (angle > 45 && angle <= 135)
-                action = "Uppercut";
+            {
+                if (delta.x < 0)
+                    action = "LeftUpperCut";
+                else if (delta.x > 0)
+                    action = "RightUpperCut";
+            }
             else if (angle > -135 && angle <= -45)
                 action = "Dodge";
             else if (angle > 135 || angle <= -135)
@@ -88,25 +104,32 @@ public class PlayerInputHandler : MonoBehaviour
 
     private void CheckCombo()
     {
-        if (_inputQueue.Count >= 3 && _inputQueue.GetRange(_inputQueue.Count - 3, 3).SequenceEqual(new[] { "LeftJab", "RightHook", "Uppercut" }))
+        foreach (var combo in _combos)
         {
-            Debug.Log("Combo Activated!");
-            _playerController.ApplyComboBonus();
-            _inputQueue.Clear();
+            if (_inputQueue.Count >= combo.sequence.Length &&
+                _inputQueue.GetRange(_inputQueue.Count - combo.sequence.Length, combo.sequence.Length).SequenceEqual(combo.sequence))
+            {
+                Debug.Log($"Combo {string.Join("->", combo.sequence)} Activated!");
+                _playerController.ApplyComboBonus(combo.damageBonus);
+                _inputQueue.Clear();
+                break;
+            }
         }
     }
 
     private IState GetStateFromAction(string action)
     {
-        switch (action)
+        Debug.Log($"Creating state for action: {action}");
+        try
         {
-            case "LeftJab": return new LeftJabState(_playerController);
-            case "RightJab": return new RightJabState(_playerController);
-            case "LeftHook": return new LeftHookState(_playerController);
-            case "RightHook": return new RightHookState(_playerController);
-            case "Uppercut": return new LeftUpperCutState(_playerController);
-            case "Dodge": return new DodgeState(_playerController);
-            default: return new IdleState(_playerController);
+            return StateFactory.CreateState(action, _playerController);
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"Failed to create state for {action}: {e.Message}");
+            return new IdleState(_playerController);
         }
     }
+
+    
 }

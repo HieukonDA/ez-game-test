@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d6b3cfe7e972b91429dd36c72fe77ebb, type: 3}
-  m_Name: RightUppercut
+  m_Name: RightUpperCut
   m_EditorClassIdentifier: 
-  actionName: RightUppercut
-  animationTrigger: RightUppercut
-  damage: 1
+  actionName: RightUpperCut
+  animationTrigger: RightUpperCut
+  damage: 10
   staminaCost: 1
