@@ -53,6 +53,7 @@ public class MatchHUD : MonoBehaviour
             StateManager.Instance.ChangeState(new DefeatState(_player));
             if (_opponent != null)
                 _opponent.ChangeEnemyState(new EnemyVictoryState(_opponent));
+            UpdateMatchDataOnGiveUp();
             StartCoroutine(EndMatch());
         });
         _continueButton.onClick.AddListener(() =>
@@ -61,6 +62,14 @@ public class MatchHUD : MonoBehaviour
             _pausePanel.SetActive(false);
             Time.timeScale = 1f; // Resume the game
         });
+
+        var matchDataObj = new GameObject("MatchData");
+        matchDataObj.AddComponent<MatchData>().PrepareForMatch();
+        MatchData.Instance.PlayerName = "hieu";
+        MatchData.Instance.PlayerLevel = 3;
+        MatchData.Instance.OpponentName = "hieu";
+        MatchData.Instance.OpponentLevel = 3;
+        MatchData.Instance.RoundNumber = 1;
 
         _currentTimer = matchDuration;
         _isMatchEnded = false;
@@ -75,25 +84,50 @@ public class MatchHUD : MonoBehaviour
         _matchTimerText.text = TimeSpan.FromSeconds(_currentTimer).ToString(@"mm\:ss");
 
         if (_currentTimer <= 0f || (_player.CurrentHealth <= 0) || (_opponent != null && _opponent.CurrentHealth <= 0))
-    {
-        _isMatchEnded = true;
-        if (_player.CurrentHealth <= 0 && _opponent.CurrentHealth <= 0)
-            _statusText.text = "Draw!";
-        else if (_player.CurrentHealth <= 0)
-            _statusText.text = lose;
-        else if (_opponent.CurrentHealth <= 0)
-            _statusText.text = win;
-        else
-            _statusText.text = "Time's Up!";
-        _statusText.gameObject.SetActive(true);
-        StartCoroutine(EndMatch());
-    }
+        {
+            _isMatchEnded = true;
+            if (_player.CurrentHealth <= 0 && _opponent.CurrentHealth <= 0)
+            {
+                _statusText.text = "Draw!";
+                MatchData.Instance.IsPlayerWin = false;
+                MatchData.Instance.RewardText = "No Reward to Obtain";
+            }
+            else if (_player.CurrentHealth <= 0)
+            {
+                _statusText.text = lose;
+                MatchData.Instance.IsPlayerWin = false;
+                MatchData.Instance.RewardText = "No Reward to Obtain";
+            }
+            else if (_opponent.CurrentHealth <= 0)
+            {
+                _statusText.text = win;
+                MatchData.Instance.IsPlayerWin = true;
+                MatchData.Instance.RewardText = "Reward Obtained!";
+            }
+            else
+            {
+                MatchData.Instance.MatchResultText = "Time's Up!";
+                MatchData.Instance.IsPlayerWin = false;
+                MatchData.Instance.RewardText = "No Reward to Obtain";
+            }
+            _statusText.text = MatchData.Instance.MatchResultText;
+            _statusText.gameObject.SetActive(true);
+            StartCoroutine(EndMatch());
+        }
     }
 
     private IEnumerator EndMatch()
     {
-        yield return new WaitForSeconds(2f); 
-        Time.timeScale = 1f; 
-        SceneManager.LoadScene("ResultMatch"); 
+        yield return new WaitForSeconds(2f);
+        Time.timeScale = 1f;
+        MatchData.Instance.PersistForResult();
+        SceneManager.LoadScene("ResultMatch");
+    }
+    
+    private void UpdateMatchDataOnGiveUp()
+    {
+        MatchData.Instance.MatchResultText = lose;
+        MatchData.Instance.IsPlayerWin = false;
+        MatchData.Instance.RewardText = "No Reward to Obtain";
     }
 }

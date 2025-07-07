@@ -35,6 +35,12 @@ public class AudioManager : MonoBehaviour
 
         InitSounds();
         sfxPlayer = new SFXPlayer(gameObject, sfxSourceCount);
+
+        // Khởi tạo âm lượng từ PlayerPrefs
+        float savedMusicVolume = PlayerPrefs.GetFloat("MusicVolume", 0.5f);
+        float savedSoundVolume = PlayerPrefs.GetFloat("SoundVolume", 0.5f);
+        SetMusicVolume(savedMusicVolume);
+        SetSFXVolume(savedSoundVolume);
     }
 
     private void InitSounds()
@@ -101,7 +107,7 @@ public class AudioManager : MonoBehaviour
 
     public void SetMusicVolume(float volume)
     {
-        audioSourceMusic.volume = volume;
+        audioSourceMusic.volume = Mathf.Clamp01(volume);
     }
 
     public void SetSFXVolume(float volume)

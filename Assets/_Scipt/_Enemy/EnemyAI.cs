@@ -134,6 +134,13 @@ public class EnemyAI : MonoBehaviour, ICombatant
         AudioManager.Instance.PlaySound("Hit");
         if (_hitEffect != null)
             _hitEffect.Play();
+
+        MatchData.Instance.TotalDamageEnemy += damage;
+        if (actionName.Contains("Power")) MatchData.Instance.PowerDamageEnemy += damage;
+        else if (actionName.Contains("Hook")) MatchData.Instance.HookDamageEnemy += damage;
+        else if (actionName.Contains("Uppercut")) MatchData.Instance.UppercutDamageEnemy += damage;
+        else if (actionName.Contains("MegaPunch")) MatchData.Instance.MegaPunchDamageEnemy += damage;
+
         if (healthBar != null)
             healthBar.UpdateHealthBar(_currentHealth, _maxHealth);
         if (_currentHealth <= 0)
@@ -157,6 +164,15 @@ public class EnemyAI : MonoBehaviour, ICombatant
             _player.ReceiveHit(actionName, attack.damage);
             if (_hitEffect != null)
                 _hitEffect.Play();
+                
+            MatchData.Instance.TotalDamageEnemy += attack.damage; // Cập nhật damage Enemy gây ra
+            if (actionName.Contains("Power")) MatchData.Instance.PowerDamageEnemy += attack.damage;
+            else if (actionName.Contains("Hook")) MatchData.Instance.HookDamageEnemy += attack.damage;
+            else if (actionName.Contains("Uppercut")) MatchData.Instance.UppercutDamageEnemy += attack.damage;
+            else if (actionName.Contains("MegaPunch")) MatchData.Instance.MegaPunchDamageEnemy += attack.damage;
+
+            Vector3 playerPos = _player.healthBar.transform.position + new Vector3(-150, -50, 0);
+            FindObjectOfType<DamageNumber>().SpawnDamageNumber(playerPos, attack.damage, false);
         }
     }
 

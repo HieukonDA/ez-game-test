@@ -95,6 +95,14 @@ public class PlayerController : MonoBehaviour, ICombatant
         {
             Vector3 enemyPos = _enemy.healthBar.transform.position + new Vector3(150, -50, 0);
             FindObjectOfType<DamageNumber>().SpawnDamageNumber(enemyPos, attack.damage, false);
+
+            MatchData.Instance.PlayerDamageDealt += attack.damage;
+            if (actionName.Contains("Power")) MatchData.Instance.PowerDamagePlayer += attack.damage;
+            else if (actionName.Contains("Hook")) MatchData.Instance.HookDamagePlayer += attack.damage;
+            else if (actionName.Contains("Uppercut")) MatchData.Instance.UppercutDamagePlayer += attack.damage;
+            else if (actionName.Contains("MegaPunch")) MatchData.Instance.MegaPunchDamagePlayer += attack.damage;
+            MatchData.Instance.TotalDamagePlayer = MatchData.Instance.PowerDamagePlayer + MatchData.Instance.HookDamagePlayer +
+                                                MatchData.Instance.UppercutDamagePlayer + MatchData.Instance.MegaPunchDamagePlayer;
         }
 
         _currentAction = null;
@@ -134,6 +142,14 @@ public class PlayerController : MonoBehaviour, ICombatant
         Vector3 pos = healthBar.transform.position + new Vector3(-150, -50, 0);
         FindObjectOfType<DamageNumber>().SpawnDamageNumber(pos, damage, true);
 
+        MatchData.Instance.PlayerDamageReceived += damage;
+        if (actionName.Contains("Power")) MatchData.Instance.PowerDamagePlayer += damage;
+        else if (actionName.Contains("Hook")) MatchData.Instance.HookDamagePlayer += damage;
+        else if (actionName.Contains("Uppercut")) MatchData.Instance.UppercutDamagePlayer += damage;
+        else if (actionName.Contains("MegaPunch")) MatchData.Instance.MegaPunchDamagePlayer += damage;
+        MatchData.Instance.TotalDamagePlayer = MatchData.Instance.PowerDamagePlayer + MatchData.Instance.HookDamagePlayer +
+                                            MatchData.Instance.UppercutDamagePlayer + MatchData.Instance.MegaPunchDamagePlayer;
+        
         if (_currentHealth <= 0)
             KnockOut();
         Debug.Log($"Player received hit with action {actionName}, current health: {_currentHealth}.");
