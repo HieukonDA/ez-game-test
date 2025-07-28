@@ -4,6 +4,7 @@
     "com.unity.feature.development": "1.0.1",
     "com.unity.inputsystem": "1.11.2",
     "com.unity.services.authentication": "3.4.1",
+    "com.unity.services.cloudsave": "3.2.2",
     "com.unity.services.leaderboards": "2.2.1",
     "com.unity.textmeshpro": "3.0.7",
     "com.unity.timeline": "1.7.6",

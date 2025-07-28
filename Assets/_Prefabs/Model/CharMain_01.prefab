@@ -264,21 +264,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _maxHealth: 100
+  _currentHealth: 0
   healthBar: {fileID: 0}
-  _animator: {fileID: 4674081637985950127}
-  _headPunchButton: {fileID: 0}
-  _stomachPunchButton: {fileID: 0}
-  _kidneyPunchButton: {fileID: 0}
-  _movementSpeed: 1
-  _rotationSpeed: 10
-  _characterController: {fileID: 6727851028025641007}
-  _inputDirection: {x: 0, y: 0}
+  _maxStamina: 100
+  _staminaRegenRate: 10
+  Animator: {fileID: 0}
+  _attacks: []
   _attackCooldown: 0.5
-  _dodgeDistance: 2
-  _attackRadius: 0.7
-  _enemys:
-  - {fileID: 0}
-  _lastAttackTime: 0
+  _hitEffect: {fileID: 0}
 --- !u!114 &4749688368066838016
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -320,6 +313,14 @@ MonoBehaviour:
         m_CallState: 2
     m_ActionId: d8cc6ff2-a2b8-4fba-833b-73f0d94faaad
     m_ActionName: movement/input
+  - m_PersistentCalls:
+      m_Calls: []
+    m_ActionId: 35333cf6-d1cb-4c65-b0d5-ec6bed432f25
+    m_ActionName: PlayerController/TouchPress
+  - m_PersistentCalls:
+      m_Calls: []
+    m_ActionId: 4ed12bc3-483b-4cbc-9a44-742b66c73636
+    m_ActionName: PlayerController/TouchPosition
   m_NeverAutoSwitchControlSchemes: 0
   m_DefaultControlScheme: 
   m_DefaultActionMap: movement
@@ -335,10 +336,10 @@ CharacterController:
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 64
   m_ExcludeLayers:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 32
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
   m_ProvidesContacts: 0

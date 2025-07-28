@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class EnemyAI : MonoBehaviour, ICombatant
@@ -14,32 +15,82 @@ public class EnemyAI : MonoBehaviour, ICombatant
     [SerializeField] private float _actionCooldown = 1f;
     [SerializeField] private float _initialDelay = 2f;
     [SerializeField] private ParticleSystem _hitEffect; // VFX for hits
+
+    //catch reference to other components
     private float _lastActionTime;
     private PlayerController _player;
     private bool _isDisabled;
     private bool _isInitialized;
     private string _currentAction;
-
+    private Dictionary<string, AttackData> _attackLookup;
+    private DamageNumber _damageNumberSystem;
     public HealthBar healthBar;
 
     void Awake()
+    {
+        InitComponents();
+        CacheAttackData();
+    }
+
+    private void InitComponents()
     {
         _animator = GetComponent<Animator>();
         if (_animator == null)
             Debug.LogError("Animator not found on EnemyAI!");
     }
 
+    private void CacheAttackData()
+    {
+        _attackLookup = new Dictionary<string, AttackData>();
+        foreach (var attack in _attacks)
+        {
+            if (!string.IsNullOrEmpty(attack.actionName))
+                _attackLookup[attack.actionName] = attack;
+        }
+    }
+
     void Start()
+    {
+        InitStats();
+        CacheReferences();
+        ValidateComponents();
+
+        if (_animator != null)
+            _animator.SetTrigger("Idle");
+
+        StartCoroutine(Initialize());
+        Debug.Log($"Enemy Position: {transform.position}, Active: {gameObject.activeSelf}");
+    }
+
+    private void InitStats()
     {
         _currentHealth = _maxHealth;
         _currentState = State.Idle;
         _currentEnemyState = new EnemyIdleState(this);
+
+        if (healthBar != null)
+            healthBar.UpdateHealthBar(_currentHealth, _maxHealth);
+        else
+            Debug.LogError("HealthBar not assigned to Enemy!");
+
+    }
+
+    private void CacheReferences()
+    {
         _player = FindObjectOfType<PlayerController>();
+        _damageNumberSystem = FindObjectOfType<DamageNumber>();
+    }
+
+    private void ValidateComponents()
+    {
         if (_player == null)
             Debug.LogError("PlayerController not found in scene!");
-        _animator.SetTrigger("Idle");
-        StartCoroutine(Initialize());
-        Debug.Log($"Enemy Position: {transform.position}, Active: {gameObject.activeSelf}");
+        if (healthBar == null)
+            Debug.LogError("HealthBar not assigned to Enemy!");
+        if (_animator == null)
+            Debug.LogError("Animator not found on Enemy!");
+        if (_damageNumberSystem == null)
+            Debug.LogError("DamageNumber system not found in scene!");
     }
 
     private IEnumerator Initialize()
@@ -86,68 +137,115 @@ public class EnemyAI : MonoBehaviour, ICombatant
         string playerAction = _player.GetCurrentAction();
         float random = Random.value;
 
-        if (playerAction == "LeftUpperCut" ||  playerAction == "RightUpperCut"  && random < 0.6f)
+        if ((playerAction == "LeftUpperCut" ||  playerAction == "RightUpperCut")  && random < 0.6f)
         {
-            _currentState = State.Block;
-            ChangeEnemyState(new EnemyBlockState(this));
+            PerformDefensiveAction(State.Block);
         }
         else if (playerAction == "LeftJab" && random < 0.4f)
         {
-            _currentState = State.Dodge;
-            ChangeEnemyState(new EnemyDodgeState(this));
+            PerformDefensiveAction(State.Dodge);
         }
+        //choose a random action
+    
         else if (random < 0.5f)
         {
-            _currentState = State.Attack;
-            AttackData attack = _attacks[Random.Range(0, _attacks.Length)];
-            _currentAction = attack.actionName;
-            ChangeEnemyState(new EnemyAttackState(this, attack));
+            PerformAttack();
         }
         else if (random < 0.7f)
         {
-            _currentState = State.Dodge;
-            ChangeEnemyState(new EnemyDodgeState(this));
+            PerformDefensiveAction(State.Dodge);
         }
         else
         {
-            _currentState = State.Block;
-            ChangeEnemyState(new EnemyBlockState(this));
+            PerformDefensiveAction(State.Block);
         }
+    }
+
+    private void PerformAttack()
+    {
+        _currentState = State.Attack;
+        AttackData attack = _attacks[Random.Range(0, _attacks.Length)];
+        _currentAction = attack.actionName;
+        ChangeEnemyState(new EnemyAttackState(this, attack));
+    }
+
+    private void PerformDefensiveAction(State defensiveState)
+    {
+        _currentState = defensiveState;
+        IState newState = defensiveState == State.Dodge ? 
+            new EnemyDodgeState(this) : 
+            new EnemyBlockState(this);
+        ChangeEnemyState(newState);
     }
 
     public bool ReceiveHit(string actionName, int damage)
     {
-        if (_isDisabled || _currentState == State.Dodge || _currentState == State.Block || _currentState == State.KnockedOut)
+        if (_isDisabled || _currentState == State.KnockedOut)
+            return false;
+
+        if (_currentState == State.Dodge || _currentState == State.Block)
         {
-            if (_currentState != State.KnockedOut)
-            {
-                _animator.SetTrigger(_currentState == State.Dodge ? "Dodge" : "Block");
-                AudioManager.Instance.PlaySound("Block");
-                if (_hitEffect != null)
-                    _hitEffect.Play();
-            }
+            HandleInvulnerableHit();
             return false;
         }
 
-        _animator.SetTrigger("Hit" + actionName);
-        _currentHealth = Mathf.Max(_currentHealth - damage, 0);
-        AudioManager.Instance.PlaySound("Hit");
-        if (_hitEffect != null)
-            _hitEffect.Play();
+        return ProcessDamage(actionName, damage);
+    }
 
-        MatchData.Instance.TotalDamageEnemy += damage;
-        if (actionName.Contains("Power")) MatchData.Instance.PowerDamageEnemy += damage;
-        else if (actionName.Contains("Hook")) MatchData.Instance.HookDamageEnemy += damage;
-        else if (actionName.Contains("Uppercut")) MatchData.Instance.UppercutDamageEnemy += damage;
-        else if (actionName.Contains("MegaPunch")) MatchData.Instance.MegaPunchDamageEnemy += damage;
+    private void HandleInvulnerableHit()
+    {
+        _animator?.SetTrigger(_currentState == State.Dodge ? "Dodge" : "Block");
+        AudioManager.Instance?.PlaySound("Block");
+        PlayHitEffect();
+
+        Debug.Log($"Enemy is {_currentState}, attack blocked/dodged!");
+    }
+
+    private void PlayHitEffect()
+    {
+        _hitEffect?.Play();
+    }
+
+    private bool ProcessDamage(string actionName, int damage)
+    {
+        _animator?.SetTrigger("Hit" + actionName);
+        _currentHealth = Mathf.Max(_currentHealth - damage, 0);
+        AudioManager.Instance?.PlaySound("Hit");
+
+        PlayHitEffect();
+
+        UpdateEnemyDamage(actionName, damage);
 
         if (healthBar != null)
             healthBar.UpdateHealthBar(_currentHealth, _maxHealth);
+
         if (_currentHealth <= 0)
         {
-            ChangeEnemyState(new EnemyKnockedOutState(this));
+            KnockOut();
         }
+
+        Vector3 pos = healthBar.transform.position + new Vector3(-150, -50, 0);
+        _damageNumberSystem?.SpawnDamageNumber(pos, damage, false);
+
         return true;
+    }
+
+    private void UpdateEnemyDamage(string actionName, int damage)
+    {
+        if (actionName.Contains("Power"))
+            MatchData.Instance.PowerDamageEnemy += damage;
+        else if (actionName.Contains("Hook"))
+            MatchData.Instance.HookDamageEnemy += damage;
+        else if (actionName.Contains("Uppercut"))
+            MatchData.Instance.UppercutDamageEnemy += damage;
+        else if (actionName.Contains("MegaPunch"))
+            MatchData.Instance.MegaPunchDamageEnemy += damage;
+
+        MatchData.Instance.TotalDamageEnemy = 
+            MatchData.Instance.PowerDamageEnemy + 
+            MatchData.Instance.HookDamageEnemy +
+            MatchData.Instance.UppercutDamageEnemy + 
+            MatchData.Instance.MegaPunchDamageEnemy;
     }
 
     public void TakeDamage(float damage)
@@ -157,22 +255,43 @@ public class EnemyAI : MonoBehaviour, ICombatant
 
     public void OnAttackHit(string actionName) // Called by Animation Event
     {
-        if (_player == null || _isDisabled) return;
-        AttackData attack = System.Array.Find(_attacks, a => a.actionName == actionName);
-        if (attack != null)
+        if (_player == null || _isDisabled || !_attackLookup.TryGetValue(actionName, out AttackData attack))
+            return;
+        
+        bool hitSuccessful = _player.ReceiveHit(actionName, attack.damage);
+
+        if (hitSuccessful)
         {
-            _player.ReceiveHit(actionName, attack.damage);
-            if (_hitEffect != null)
-                _hitEffect.Play();
-                
-            MatchData.Instance.TotalDamageEnemy += attack.damage; // Cập nhật damage Enemy gây ra
-            if (actionName.Contains("Power")) MatchData.Instance.PowerDamageEnemy += attack.damage;
-            else if (actionName.Contains("Hook")) MatchData.Instance.HookDamageEnemy += attack.damage;
-            else if (actionName.Contains("Uppercut")) MatchData.Instance.UppercutDamageEnemy += attack.damage;
-            else if (actionName.Contains("MegaPunch")) MatchData.Instance.MegaPunchDamageEnemy += attack.damage;
+            PlayHitEffect();
+
+            UpdateEnemyDamageDealt(actionName, attack.damage);
 
             Vector3 playerPos = _player.healthBar.transform.position + new Vector3(-150, -50, 0);
-            FindObjectOfType<DamageNumber>().SpawnDamageNumber(playerPos, attack.damage, false);
+            _damageNumberSystem?.SpawnDamageNumber(playerPos, attack.damage, false);
+        }
+    }
+
+    private void UpdateEnemyDamageDealt(string actionName, int damage)
+    {
+        MatchData.Instance.TotalDamageEnemy += damage;
+
+        if (actionName.Contains("Power"))
+            MatchData.Instance.PowerDamageEnemy += damage;
+        else if (actionName.Contains("Hook"))
+            MatchData.Instance.HookDamageEnemy += damage;
+        else if (actionName.Contains("Uppercut"))
+            MatchData.Instance.UppercutDamageEnemy += damage;
+        else if (actionName.Contains("MegaPunch"))
+            MatchData.Instance.MegaPunchDamageEnemy += damage;
+    }
+
+    private void KnockOut()
+    {
+        if (!_isDisabled)
+        {
+            _isDisabled = true;
+            _currentState = State.KnockedOut;
+            ChangeEnemyState(new EnemyKnockedOutState(this));
         }
     }
 

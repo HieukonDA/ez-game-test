@@ -24,8 +24,6 @@ public class MatchData : MonoBehaviour
     public float HookDamageEnemy { get; set; }
     public float UppercutDamageEnemy { get; set; }
     public float MegaPunchDamageEnemy { get; set; }
-    public bool CanUpgrade { get; set; }
-    public bool CanProceedNext { get; set; }
 
     void Awake()
     {
@@ -59,8 +57,6 @@ public class MatchData : MonoBehaviour
         HookDamageEnemy = 0f;
         UppercutDamageEnemy = 0f;
         MegaPunchDamageEnemy = 0f;
-        CanUpgrade = false;
-        CanProceedNext = false;
     }
 
     public void PersistForResult()
@@ -70,6 +66,11 @@ public class MatchData : MonoBehaviour
 
     public void Cleanup()
     {
+        if (Instance == this)
+        {
+            Instance = null;
+        }
+
         Destroy(gameObject);
     }
 
@@ -77,5 +78,10 @@ public class MatchData : MonoBehaviour
     public void UpdateTotalDamagePlayer()
     {
         TotalDamagePlayer = PowerDamagePlayer + HookDamagePlayer + UppercutDamagePlayer + MegaPunchDamagePlayer;
+    }
+
+    public void UpdateTotalDamageEnemy()
+    {
+        TotalDamageEnemy = PowerDamageEnemy + HookDamageEnemy + UppercutDamageEnemy + MegaPunchDamageEnemy;
     }
 }

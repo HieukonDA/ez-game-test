@@ -70,7 +70,7 @@ public class PanelManager : MonoBehaviour
         }
         return null;
     }
-    
+
     public static void Open(string id)
     {
         var panel = GetSingleton(id);
@@ -78,6 +78,7 @@ public class PanelManager : MonoBehaviour
         {
             panel.Open();
         }
+        else Debug.LogError($"Panel with id {id} not found!");
     }
     
     public static void Close(string id)

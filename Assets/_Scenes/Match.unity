@@ -678,6 +678,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 71526794}
     - target: {fileID: 7794924270620138270, guid: 775cd3b427d63974d8703d8fc87cc3ce, type: 3}
+      propertyPath: _hitEffect
+      value: 
+      objectReference: {fileID: 8272737765457413828, guid: 9c593196e1822274d8c8b5b200bd31b0, type: 3}
+    - target: {fileID: 7794924270620138270, guid: 775cd3b427d63974d8703d8fc87cc3ce, type: 3}
       propertyPath: _attacks.Array.size
       value: 8
       objectReference: {fileID: 0}
@@ -2564,6 +2568,50 @@ MonoBehaviour:
   _pauseButton: {fileID: 151454890}
   _pausePanel: {fileID: 2114130763}
   _statusText: {fileID: 35794809}
+--- !u!1 &1329138975
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1329138977}
+  - component: {fileID: 1329138976}
+  m_Layer: 0
+  m_Name: StateManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1329138976
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1329138975}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d36b380b74bfa7d4ea32bcda96d39537, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!4 &1329138977
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1329138975}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 567.60474, y: 242.2886, z: -1.9391348}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1561372311
 GameObject:
   m_ObjectHideFlags: 0
@@ -3814,6 +3862,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 1989309201}
     - target: {fileID: 5521769192493349910, guid: 6e70ac2dd964f7e4798ba322509c7e7a, type: 3}
+      propertyPath: _hitEffect
+      value: 
+      objectReference: {fileID: 8272737765457413828, guid: 9c593196e1822274d8c8b5b200bd31b0, type: 3}
+    - target: {fileID: 5521769192493349910, guid: 6e70ac2dd964f7e4798ba322509c7e7a, type: 3}
       propertyPath: _maxHealth
       value: 100
       objectReference: {fileID: 0}
@@ -4081,3 +4133,4 @@ SceneRoots:
   - {fileID: 1272779400}
   - {fileID: 1823451936}
   - {fileID: 319100837}
+  - {fileID: 1329138977}
