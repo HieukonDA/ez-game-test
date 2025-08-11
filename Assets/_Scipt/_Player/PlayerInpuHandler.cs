@@ -65,6 +65,7 @@ public class PlayerInputHandler : MonoBehaviour
 
     private void DetectSwipe(Vector2 delta, float duration)
     {
+        Debug.Log($"==TOUCH DETECTED: {Time.time}, Delta: {delta.magnitude}, Duration: {duration}");
         if (_playerController == null) return;
 
         if (Time.time - _lastInputTime > _comboWindow)
@@ -95,9 +96,11 @@ public class PlayerInputHandler : MonoBehaviour
 
         if (action != null)
         {
+            Debug.Log($"==ACTION DETERMINED: {action}");
             _inputQueue.Add(action);
             _lastInputTime = Time.time;
-            StateManager.Instance.ChangeState(GetStateFromAction(action));
+            _playerController.PerformAttack(action);
+            // StateManager.Instance.ChangeState(GetStateFromAction(action));
             CheckCombo();
         }
     }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -16,7 +17,7 @@ public class PlayerController : MonoBehaviour, ICombatant
 
     [Header("Stamina Settings")]
     [SerializeField] private float _maxStamina = 100f;
-    private float _currentStamina;
+    [SerializeField] private float _currentStamina;
     [SerializeField] private float _staminaRegenRate = 10f;
     [Header("Damage Numbers")]
     [Header("Animator")]
@@ -34,6 +35,7 @@ public class PlayerController : MonoBehaviour, ICombatant
     private string _currentAction;
     private Dictionary<string, AttackData> _attackLookup;
     private DamageNumber _damageNumberSystem;
+    public event Action<string> _onAttackHitCallBack;
 
     void Awake()
     {
@@ -101,7 +103,16 @@ public class PlayerController : MonoBehaviour, ICombatant
             Debug.LogError("DamageNumber system not found in scene!");
     }
 
-    
+    public void UpdateDamage(float newBonusDamagePercent)
+    {
+        foreach (var attack in _attacks)
+        {
+            if (attack != null && attack.damage > 0)
+            {
+                attack.bonusDamagePercent = newBonusDamagePercent;
+            }
+        }
+    }
 
     void Update()
     {
@@ -114,35 +125,56 @@ public class PlayerController : MonoBehaviour, ICombatant
         return !_isDisabled && Time.time - _lastAttackTime > _attackCooldown && _currentStamina >= staminaCost;
     }
 
-    public void PerformHit(string actionName)
+    public void PerformAttack(string actionName) //player calls this to attack
     {
         if (_enemy == null || !_attackLookup.TryGetValue(actionName, out AttackData attack)) return;
-  
+
         if (!CanAttack(attack.staminaCost))
+        {
+            _onAttackHitCallBack?.Invoke("Stamina is too low!");
             return;
+        }
 
         _currentStamina -= attack.staminaCost;
         _currentAction = actionName;
         _lastAttackTime = Time.time;
 
-        AudioManager.Instance?.PlaySound("Punch");
-        Animator?.SetTrigger(attack.animationTrigger);
+
+        // Animator.speed = 2f;
+        StateManager.Instance.ChangeState(GetStateFromAction(_currentAction));
+        _onAttackHitCallBack?.Invoke(_currentAction);
+        
+    }
+
+    private IState GetStateFromAction(string action)
+    {
+        Debug.Log($"Creating state for action: {action}");
+        try
+        {
+            return StateFactory.CreateState(action, this);
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"Failed to create state for {action}: {e.Message}");
+            return new IdleState(this);
+        }
     }
 
     public void OnAttackHit(string actionName) // Called by Animation Event
     {
         if (_enemy == null || !_attackLookup.TryGetValue(actionName, out AttackData attack))
             return;
-
-        bool hitSuccessful = _enemy.ReceiveHit(actionName, attack.damage);
+        // change this to use the FinalDamage method
+        bool hitSuccessful = _enemy.ReceiveHit(actionName, attack.FinalDamage());
+        Debug.LogError("OnAttackHit called with action: " + actionName + ", damage: " + attack.FinalDamage());
 
         if (hitSuccessful)
         {
             PlayHitEffect();
 
             Vector3 enemyPos = _enemy.healthBar.transform.position + new Vector3(150, -50, 0);
-            _damageNumberSystem?.SpawnDamageNumber(enemyPos, attack.damage, false);
-            UpdatePlayerDamage(actionName, attack.damage, false);
+            _damageNumberSystem?.SpawnDamageNumber(enemyPos, attack.FinalDamage(), false);
+            UpdatePlayerDamage(actionName, attack.FinalDamage(), false);
         }
 
         _currentAction = null;
@@ -232,7 +264,7 @@ public class PlayerController : MonoBehaviour, ICombatant
 
     public void TriggerAnimation(string animationName)
     {
-        if (_currentState != State.Idle && animationName != "Idle") return;
+        // if (_currentState != State.Idle && animationName != "Idle") return;
         Animator.SetTrigger(animationName);
         _currentState = animationName switch
         {

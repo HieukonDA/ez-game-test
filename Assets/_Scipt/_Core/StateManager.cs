@@ -20,8 +20,22 @@ public class StateManager : MonoBehaviour
 
     public void ChangeState(IState state)
     {
-        if (_currentState != null && _currentState.GetType() == typeof(KnockedOutState)) return; // Prevent state change during KnockOut
-        if (_currentState != null && state != null && state.GetType() == _currentState.GetType()) return;
+        if (_currentState != null && _currentState.GetType() == typeof(KnockedOutState))
+        {
+            Debug.LogWarning("===Cannot change state while in KnockedOutState.");
+            // return; // Prevent state change during KnockOut
+        }
+
+        // if (_currentState != null && _currentState != state)
+        // {
+        //     // Cancel current attack
+        //     _currentState = null;
+        // }
+        if (_currentState != null && state != null && state.GetType() == _currentState.GetType())
+        {
+            Debug.LogWarning($"===Already in state: {state.GetType().Name}. and {_currentState.GetType().Name} No state change needed.");
+            // return; // Prevent redundant state changes
+        }   
 
         if (_currentState != null)
         {

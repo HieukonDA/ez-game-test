@@ -78,7 +78,18 @@ public class SettingPanel : Panel
 
     private void SignOut()
     {
-        MenuManager.Singleton.SignOut();
+        ActionConfirmMenu panel = (ActionConfirmMenu)PanelManager.GetSingleton("actionconfirm");
+        panel.Open(SignOutResult, "Do you want to sign out?", "Yes", "No");
+        AudioManager.Instance.PlaySound("ButtonClick");
+    }
+
+    private void SignOutResult(ActionConfirmMenu.Result result)
+    {
+        if (result == ActionConfirmMenu.Result.Positive)
+        {
+            MenuManager.Singleton.SignOut();
+        }
+        
     }
 
     private void OnSupportButtonClicked()

@@ -6,6 +6,7 @@ using System.Collections;
 using UnityEditor.SearchService;
 using UnityEngine.SceneManagement;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 
 public class MatchHUD : MonoBehaviour
 {
@@ -24,11 +25,22 @@ public class MatchHUD : MonoBehaviour
     [SerializeField] private float matchDuration = 90f; // 5 minutes
     private float _currentTimer;
 
+    [Header("Match Skill item inventory")]
+    public List<ItemPlayerEquiped> itemEquipped = new List<ItemPlayerEquiped>();
+    [SerializeField] private GameObject _itemEquippedPrefab;
+    [SerializeField] private Transform _itemSkillPlayerContainer;
+    [SerializeField] private GameObject _skillTimer;
+    [SerializeField] private Image _skillTimerImage;
+    [SerializeField] private TextMeshProUGUI _skillTimerText;
+    [SerializeField] private ItemEquipped _itemEquipped;
+
+    [Header("Match Status")]
     [SerializeField] private Button _pauseButton;
     [SerializeField] private GameObject _pausePanel;
     private Button _giveUpButton;
     private Button _continueButton;
     [SerializeField] private TextMeshProUGUI _statusText;
+    [SerializeField] private TextMeshProUGUI _infoActionText;
     private const string lose = "You Lose!";
     private const string win = "You Win!";
     private bool _isMatchEnded;
@@ -38,6 +50,7 @@ public class MatchHUD : MonoBehaviour
     {
         SetupUI();
         SetupMatchData();
+        LoadItemFromCloud();
         _currentTimer = matchDuration;
         _isMatchEnded = false;
         _matchTimerText.text = TimeSpan.FromSeconds(_currentTimer).ToString(@"mm\:ss");
@@ -74,6 +87,8 @@ public class MatchHUD : MonoBehaviour
             _pausePanel.SetActive(false);
             Time.timeScale = 1f;
         });
+
+        _player._onAttackHitCallBack += OnPlayerActionReceived;
     }
 
     private void SetupMatchData()
@@ -103,7 +118,7 @@ public class MatchHUD : MonoBehaviour
             StartCoroutine(HandleMatchEnd());
         }
     }
-    
+
     private void DetermineMatchResult()
     {
         if (_player.CurrentHealth <= 0 && _opponent.CurrentHealth <= 0)
@@ -135,7 +150,7 @@ public class MatchHUD : MonoBehaviour
 
         // Calculate coin reward
         totalCoins = CalculateCoinReward();
-        
+
         // Update coins and wait for completion
         if (totalCoins > 0)
         {
@@ -223,4 +238,126 @@ public class MatchHUD : MonoBehaviour
         MatchData.Instance.IsPlayerWin = false;
         MatchData.Instance.RewardText = "No Reward to Obtain";
     }
+
+    #region Action info
+    private void OnPlayerActionReceived(string actionInfo)
+    {
+        _infoActionText.text = actionInfo;
+    }
+    
+    #endregion
+
+    #region Skill 
+
+    public async void LoadItemFromCloud()
+    {
+        var equippedItems = await MenuManager.Singleton.LoadItemEquippedAsync();
+        LoadItemEquippedAsync(equippedItems);
+    }
+
+    public void LoadItemEquippedAsync(List<ItemData> itemDataList)
+    {
+        if (itemDataList == null || itemDataList.Count == 0)
+        {
+            Debug.LogWarning("No items to load for ItemPreMatch.");
+            return;
+        }
+
+        for (int i = _itemSkillPlayerContainer.childCount - 1; i >= 0; i--)
+        {
+            Destroy(_itemSkillPlayerContainer.GetChild(i).gameObject);
+        }
+        itemEquipped.Clear();
+
+        foreach (var itemData in itemDataList)
+        {
+            if (itemData == null)
+            {
+                Debug.LogError("ItemData is null in LoadItemEquippedAsync.");
+                continue;
+            }
+            AddItemEquipped(itemData);
+        }
+    }
+
+    public void AddItemEquipped(ItemData item)
+    {
+        if (item == null)
+        {
+            Debug.LogError("ItemPlayerEquiped or ItemData is null in AddItemEquipped.");
+            return;
+        }
+        ItemPlayerEquiped itemEquipped = Instantiate(_itemEquippedPrefab, _itemSkillPlayerContainer).GetComponent<ItemPlayerEquiped>();
+        itemEquipped.Setup(item);
+        this.itemEquipped.Add(itemEquipped);
+
+        itemEquipped.GetComponent<Button>().onClick.AddListener(() => HandleItemClicked(item, itemEquipped));
+    }
+
+    private void HandleItemClicked(ItemData item, ItemPlayerEquiped itemEquipped)
+    {
+        _skillTimer.SetActive(true);
+        _skillTimerImage.fillAmount = 1f;
+        _skillTimerText.text = item.coolDownTime.ToString("F1");
+        InteractableWithItem(false,"#917b7bff");
+        var button = itemEquipped.GetComponent<Button>();
+        var colors = button.colors;
+        colors.disabledColor = Color.white;
+        button.colors = colors;
+
+        if (item.coolDownTime > 0)
+        {
+            StartCoroutine(SkillCooldownCoroutine(item.coolDownTime, item));
+        }
+        else
+        {
+            Debug.LogWarning("ItemData's coolDownTime is zero or negative, cannot start cooldown.");
+        }
+    }
+
+    private IEnumerator SkillCooldownCoroutine(float cooldownTime, ItemData itemData)
+    {
+        float elapsedTime = 0f;
+        while (elapsedTime < cooldownTime)
+        {
+            elapsedTime += Time.deltaTime;
+            float fillAmount = 1f - (elapsedTime / cooldownTime);
+            _skillTimerImage.fillAmount = fillAmount;
+            _skillTimerText.text = (cooldownTime - elapsedTime).ToString("F1");
+
+            _itemEquipped.EquipItem(itemData);
+            _player.UpdateDamage(itemData.bonusDamagePercent);
+
+            yield return null;
+        }
+        _skillTimer.SetActive(false);
+        _skillTimerImage.fillAmount = 0f;
+        InteractableWithItem(true, "#917b7bff");
+        _itemEquipped.ClearItem();
+        _player.UpdateDamage(0f);
+    }
+
+    public void InteractableWithItem(bool interactable, string color)
+    {
+        Color newColor;
+        ColorUtility.TryParseHtmlString(color, out newColor);
+
+        foreach (var itemEquipped in itemEquipped)
+        {
+            if (itemEquipped != null)
+            {
+                itemEquipped.GetComponent<Button>().interactable = interactable;
+                var colors = itemEquipped.GetComponent<Button>().colors;
+                colors.disabledColor = newColor;
+                itemEquipped.GetComponent<Button>().colors = colors;
+            }
+            else
+            {
+                Debug.LogError("ItemPlayerEquiped is null in InteractableWithItem.");
+            }
+        }
+    }
+    
+
+    #endregion
 }

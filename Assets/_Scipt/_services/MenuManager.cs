@@ -66,10 +66,10 @@ public class MenuManager : MonoBehaviour
             singleton = null;
         }
     }
-    
+
     private void Initialize()
     {
-        if (initialized) return; 
+        if (initialized) return;
         initialized = true;
     }
 
@@ -130,11 +130,11 @@ public class MenuManager : MonoBehaviour
         {
             await AuthenticationService.Instance.SignInWithUsernamePasswordAsync(username, password);
         }
-        catch (AuthenticationException )
+        catch (AuthenticationException)
         {
             ShowError(ErrorMenu.Action.OpenAuthMenu, "Username or password is wrong.", "OK");
         }
-        catch (RequestFailedException )
+        catch (RequestFailedException)
         {
             ShowError(ErrorMenu.Action.OpenAuthMenu, "Failed to connect to the network.", "OK");
         }
@@ -147,11 +147,11 @@ public class MenuManager : MonoBehaviour
         {
             await AuthenticationService.Instance.SignUpWithUsernamePasswordAsync(username, password);
         }
-        catch (AuthenticationException )
+        catch (AuthenticationException)
         {
             ShowError(ErrorMenu.Action.OpenAuthMenu, "Username or password is wrong.", "OK");
         }
-        catch (RequestFailedException )
+        catch (RequestFailedException)
         {
             ShowError(ErrorMenu.Action.OpenAuthMenu, "Failed to connect to the network.", "OK");
         }
@@ -210,7 +210,7 @@ public class MenuManager : MonoBehaviour
 
             OnAuthenticationComplete?.Invoke();
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             Debug.LogError($"Failed to update player name: {e.Message}");
             ShowError(ErrorMenu.Action.OpenAuthMenu, "Failed to update player name.", "OK");
@@ -254,12 +254,12 @@ public class MenuManager : MonoBehaviour
     private async Task<int> LoadCoinsDataAsync()
     {
         int coins = 0;
-        
+
         try
         {
             // Load data same way as CustomizationMenu
             var playerData = await CloudSaveService.Instance.Data.Player.LoadAsync(
-                new HashSet<string> { "coins" }, 
+                new HashSet<string> { "coins" },
                 new LoadOptions(new PublicReadAccessClassOptions())
             );
 
@@ -277,7 +277,7 @@ public class MenuManager : MonoBehaviour
                     coins = int.Parse(data["value"].ToString());
                 }
             }
-            
+
             Debug.Log($"Loaded coins: {coins}");
         }
         catch (Exception exception)
@@ -346,7 +346,7 @@ public class MenuManager : MonoBehaviour
                 data,
                 new Unity.Services.CloudSave.Models.Data.Player.SaveOptions(new PublicWriteAccessClassOptions())
             );
-            
+
             Debug.Log($"Successfully updated coins from coins to {coins}");
             return coins;
         }
@@ -399,9 +399,9 @@ public class MenuManager : MonoBehaviour
 
         try
         {
-            var keys = new HashSet<string> { COINS_KEY, DIAMONDS_KEY, GYM_POINTS_KEY  };
+            var keys = new HashSet<string> { COINS_KEY, DIAMONDS_KEY, GYM_POINTS_KEY };
             var playerData = await CloudSaveService.Instance.Data.Player.LoadAsync(
-                keys, 
+                keys,
                 new LoadOptions(new PublicReadAccessClassOptions())
             );
 
@@ -418,8 +418,8 @@ public class MenuManager : MonoBehaviour
             throw;
         }
     }
-    
-    private int ExtractCurrencyAmount(Dictionary<string, Item> playerData, string key)
+
+    private int ExtractCurrencyAmount(Dictionary<string, Unity.Services.CloudSave.Models.Item> playerData, string key)
     {
         if (playerData.TryGetValue(key, out var currencyData))
         {
@@ -482,4 +482,131 @@ public class MenuManager : MonoBehaviour
     }
 
     #endregion
+
+    #region Inventory Management
+    public async Task SaveItemEquippedAsync(List<ItemData> itemEquipped)
+    {
+        if (!IsSignedIn())
+        {
+            Debug.LogError("Not signed in when trying to save item equipped.");
+            return;
+        }
+
+        try
+        {
+            var data = new Dictionary<string, object>
+            {
+                { "equippedItems", itemEquipped.ConvertAll(item => item.itemID) }
+            };
+
+            await CloudSaveService.Instance.Data.Player.SaveAsync(
+                data,
+                new Unity.Services.CloudSave.Models.Data.Player.SaveOptions(new PublicWriteAccessClassOptions())
+            );
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"Failed to save equipped items: {e.Message}");
+            throw;
+        }
+    }
+
+    public async Task<List<ItemData>> LoadItemEquippedAsync()
+    {
+        if (!IsSignedIn())
+        {
+            Debug.LogError("Not signed in when trying to load equipped items.");
+            return new List<ItemData>();
+        }
+
+        try
+        {
+            var playerData = await CloudSaveService.Instance.Data.Player.LoadAsync(
+                new HashSet<string> { "equippedItems" },
+                new LoadOptions(new PublicReadAccessClassOptions())
+            );
+            ItemPreMatch itemPreMatch = new ItemPreMatch();
+            List<int> ItemIds = new List<int>();
+            if (playerData.TryGetValue("equippedItems", out var equippedItemsData))
+            {
+                ItemIds = equippedItemsData.Value.GetAs<List<int>>();
+            }
+
+            return InventoryManager.Instance.GetItemDataFromItemIds(ItemIds);
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"Failed to load equipped items: {e.Message}");
+            throw;
+        }
+    }
+
+
+
+    #endregion
+
+
+    // #region Inventory Management
+    // public async Task SaveInventoryAsync(PlayerInventory playerInventory)
+    // {
+    //     if (!IsSignedIn())
+    //     {
+    //         Debug.LogError("Not signed in when trying to save inventory.");
+    //         throw new InvalidOperationException("User not signed in");
+    //     }
+
+    //     try
+    //     {
+    //         var data = new Dictionary<string, object>
+    //         {
+    //             {"ownedItems", playerInventory.ownedItems.ConvertAll(item => item.itemID)},
+    //             {"equippedItems", playerInventory.equippedItems.ConvertAll(item => item.itemID)}
+    //         };
+
+    //         await CloudSaveService.Instance.Data.Player.SaveAsync(
+    //             data,
+    //             new Unity.Services.CloudSave.Models.Data.Player.SaveOptions(new PublicWriteAccessClassOptions())
+    //         );
+    //     }
+    //     catch (System.Exception e)
+    //     {
+    //         Debug.LogError($"Failed to save inventory: {e.Message}");
+    //         throw;
+    //     }
+    // }
+
+    // public async Task<PlayerInventory> LoadInventoryAsync()
+    // {
+    //     if (IsSignedIn())
+    //     {
+    //         Debug.LogError("Not signed in when trying to load inventory.");
+    //         throw new InvalidOperationException("User not signed in");
+    //     }
+
+    //     try
+    //     {
+    //         var playerData = await CloudSaveService.Instance.Data.Player.LoadAsync(
+    //             new HashSet<string> { "ownedItems", "equippedItems" },
+    //             new LoadOptions(new PublicReadAccessClassOptions())
+    //         );
+
+    //         PlayerInventory playerInventory = new PlayerInventory();
+    //         if (playerData.TryGetValue("ownedItems", out var ownedItemsData))
+    //         {
+    //             playerInventory.ownedItems = ownedItemsData.Value.GetAs<List<ItemData>>();
+    //         }
+    //         if (playerData.TryGetValue("equippedItems", out var equippedItemsData))
+    //         {
+    //             playerInventory.equippedItems = equippedItemsData.Value.GetAs<List<ItemData>>();
+    //         }
+
+    //         return playerInventory;
+    //     }
+    //     catch (Exception e)
+    //     {
+    //         Debug.LogError($"Failed to load inventory: {e.Message}");
+    //         throw;
+    //     }
+    // }
+    // #endregion
 }

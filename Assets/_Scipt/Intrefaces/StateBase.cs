@@ -36,6 +36,10 @@ public abstract class StateBase : IState
 
     public virtual void Exit()
     {
+        // if (_controller is PlayerController player)
+        //     player.Animator.ResetTrigger(GetAnimationName());
+        // else if (_controller is EnemyAI enemy)
+        //     enemy.GetAnimator().ResetTrigger(GetAnimationName());
         Debug.Log($"Exiting {GetType().Name}");
     }
 

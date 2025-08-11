@@ -7,4 +7,10 @@ public class AttackData : ScriptableObject
     public string animationTrigger;
     public int damage;
     public float staminaCost;
+    public float bonusDamagePercent = 0;
+
+    public int FinalDamage()
+    {
+        return Mathf.RoundToInt(damage * (1 + bonusDamagePercent / 100f));
+    }
 }

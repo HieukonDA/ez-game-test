@@ -1,0 +1,34 @@
+{
+    "name": "test",
+    "maps": [
+        {
+            "name": "New action map",
+            "id": "48355e4a-992f-44b2-b59f-5ad625541cd1",
+            "actions": [
+                {
+                    "name": "New action",
+                    "type": "Value",
+                    "id": "ac4644a3-e6ed-46f1-b9f2-be26f4ea4550",
+                    "expectedControlType": "Axis",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "c4e6b069-72c8-4527-a262-98fb020017cc",
+                    "path": "<NimbusGamepadHid>/buttonSouth",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "New action",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        }
+    ],
+    "controlSchemes": []
+}

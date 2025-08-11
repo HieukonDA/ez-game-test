@@ -4,6 +4,7 @@ using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using TMPro;
 using System.Threading.Tasks;
+using System.Net;
 
 public class MainMenu : MonoBehaviour
 {
@@ -91,7 +92,7 @@ public class MainMenu : MonoBehaviour
                 // Load only coins
                 _coins = await MenuManager.Singleton.LoadCoinsAsync();
                 UpdateCoinDisplay(_coins);
-                
+
                 Debug.Log($"Loaded coins in MainMenu: {_coins}");
             }
         }
